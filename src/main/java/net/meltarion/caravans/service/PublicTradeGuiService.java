@@ -126,14 +126,23 @@ public final class PublicTradeGuiService {
             return displayItem;
         }
 
-        List<Component> lore = new ArrayList<>();
-        lore.add(LEGACY_SERIALIZER.deserialize("&7Type: &fSELL"));
-        lore.add(LEGACY_SERIALIZER.deserialize("&7Amount: &f" + operation.amountPerTransaction()));
-        lore.add(LEGACY_SERIALIZER.deserialize("&7Price: &f" + operation.priceCurrencyAmount() + " " + configManager.getCurrencyItem().name()));
-        lore.add(LEGACY_SERIALIZER.deserialize("&7Remaining stock: &f" + resolveSellRemaining(caravan, operation)));
-        lore.add(LEGACY_SERIALIZER.deserialize("&7Active: &f" + (operation.active() ? "yes" : "no")));
-        lore.add(LEGACY_SERIALIZER.deserialize("&eClick to purchase."));
-        meta.lore(lore);
+        meta.lore(serializeLore(replacePlaceholders(
+            guiConfigManager.getStringList("public-trade.sell-offers.offer.lore", List.of(
+                "&7Type: &fSELL",
+                "&7Amount: &f%amount%",
+                "&7Price: &f%price% %currency%",
+                "&7Remaining stock: &f%remaining%",
+                "&7Active: &f%active%",
+                "&eClick to purchase."
+            )),
+            java.util.Map.of(
+                "amount", String.valueOf(operation.amountPerTransaction()),
+                "price", String.valueOf(operation.priceCurrencyAmount()),
+                "currency", configManager.getCurrencyItem().name(),
+                "remaining", String.valueOf(resolveSellRemaining(caravan, operation)),
+                "active", operation.active() ? "yes" : "no"
+            )
+        )));
         meta.addItemFlags(ItemFlag.values());
         displayItem.setItemMeta(meta);
         return displayItem;
@@ -146,14 +155,23 @@ public final class PublicTradeGuiService {
             return displayItem;
         }
 
-        List<Component> lore = new ArrayList<>();
-        lore.add(LEGACY_SERIALIZER.deserialize("&7Type: &fBUY"));
-        lore.add(LEGACY_SERIALIZER.deserialize("&7Amount per sale: &f" + operation.amountPerTransaction()));
-        lore.add(LEGACY_SERIALIZER.deserialize("&7Price: &f" + operation.priceCurrencyAmount() + " " + configManager.getCurrencyItem().name()));
-        lore.add(LEGACY_SERIALIZER.deserialize("&7Remaining wanted: &f" + Math.max(0, (operation.maxTotalAmount() == null ? 0 : operation.maxTotalAmount() - operation.fulfilledAmount()))));
-        lore.add(LEGACY_SERIALIZER.deserialize("&7Active: &f" + (operation.active() ? "yes" : "no")));
-        lore.add(LEGACY_SERIALIZER.deserialize("&eClick to sell items."));
-        meta.lore(lore);
+        meta.lore(serializeLore(replacePlaceholders(
+            guiConfigManager.getStringList("public-trade.buy-orders.offer.lore", List.of(
+                "&7Type: &fBUY",
+                "&7Amount per sale: &f%amount%",
+                "&7Price: &f%price% %currency%",
+                "&7Remaining wanted: &f%remaining%",
+                "&7Active: &f%active%",
+                "&eClick to sell items."
+            )),
+            java.util.Map.of(
+                "amount", String.valueOf(operation.amountPerTransaction()),
+                "price", String.valueOf(operation.priceCurrencyAmount()),
+                "currency", configManager.getCurrencyItem().name(),
+                "remaining", String.valueOf(Math.max(0, (operation.maxTotalAmount() == null ? 0 : operation.maxTotalAmount() - operation.fulfilledAmount()))),
+                "active", operation.active() ? "yes" : "no"
+            )
+        )));
         meta.addItemFlags(ItemFlag.values());
         displayItem.setItemMeta(meta);
         return displayItem;
@@ -184,9 +202,23 @@ public final class PublicTradeGuiService {
         }
 
         itemMeta.displayName(LEGACY_SERIALIZER.deserialize(name));
-        itemMeta.lore(loreLines.stream().map(LEGACY_SERIALIZER::deserialize).collect(Collectors.toList()));
+        itemMeta.lore(serializeLore(loreLines));
         itemMeta.addItemFlags(ItemFlag.values());
         itemStack.setItemMeta(itemMeta);
         return itemStack;
+    }
+
+    private List<String> replacePlaceholders(List<String> lines, java.util.Map<String, String> placeholders) {
+        return lines.stream().map(line -> {
+            String output = line;
+            for (java.util.Map.Entry<String, String> entry : placeholders.entrySet()) {
+                output = output.replace('%' + entry.getKey() + '%', entry.getValue());
+            }
+            return output;
+        }).toList();
+    }
+
+    private List<Component> serializeLore(List<String> loreLines) {
+        return loreLines.stream().map(LEGACY_SERIALIZER::deserialize).collect(Collectors.toList());
     }
 }

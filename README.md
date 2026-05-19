@@ -1,16 +1,20 @@
 # MeltarionCaravans
 
-`MeltarionCaravans` is a Paper plugin skeleton for a future caravan trading system on a Towny server.
+`MeltarionCaravans` is a Paper plugin for persistent, route-driven caravans on a Towny server.
 
 ## Current scope
 
 - Paper/Leaf `1.21.x`
 - Java `21`
-- Config-driven currency item for MVP
-- Service-oriented plugin core
 - SQLite-backed caravan persistence
-- `/caravan` root command with base subcommands
-- No GUI, Towny, or Dynmap integration yet
+- Virtual caravan movement with physical projection
+- Public trading on Towny Shop Plots
+- Owner/admin caravan setup GUIs
+- Optional Dynmap marker integration
+- Split runtime configuration files:
+  - `config.yml` for gameplay and system settings
+  - `lang.yml` for all messages and help text
+  - `gui.yml` for GUI titles, buttons, lore, and icon materials
 
 ## Development
 
@@ -20,9 +24,11 @@
 
 The plugin jar will be generated in `build/libs/`.
 
+`/caravan reload` reloads `config.yml`, `lang.yml`, and `gui.yml`.
+
 ## Roadmap
 
-- Towny-aware caravan ownership and territory rules
-- Dynmap or LiveAtlas markers
-- Virtual movement and physical caravan entities
-- GUI management flows
+- Multi-stop route refinement
+- Additional Towny route restrictions and permissions
+- Expanded trading rules and economy integration
+- More polished map and admin tooling

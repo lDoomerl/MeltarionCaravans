@@ -105,8 +105,24 @@ gui:
             - "&7Close this menu."
     sell-offers:
       title: "&8Buy From Caravan"
+      offer:
+        lore:
+          - "&7Type: &fSELL"
+          - "&7Amount: &f%amount%"
+          - "&7Price: &f%price% %currency%"
+          - "&7Remaining stock: &f%remaining%"
+          - "&7Active: &f%active%"
+          - "&eClick to purchase."
     buy-orders:
       title: "&8Sell To Caravan"
+      offer:
+        lore:
+          - "&7Type: &fBUY"
+          - "&7Amount per sale: &f%amount%"
+          - "&7Price: &f%price% %currency%"
+          - "&7Remaining wanted: &f%remaining%"
+          - "&7Active: &f%active%"
+          - "&eClick to sell items."
     shared:
       back:
         name: "&eBack"
@@ -118,8 +134,30 @@ gui:
           - "&7Close this menu."
   trade-management:
     title: "&8Caravan Trades: &6%name%"
+    operation:
+      type: "&7Type: &f%type%"
+      sell-lore:
+        - "&7Amount: &f%amount%"
+        - "&7Price: &f%price% %currency%"
+        - "&7Slot: &f%slot%"
+        - "&7Active: &f%active%"
+      buy-lore:
+        - "&7Amount per transaction: &f%amount%"
+        - "&7Price: &f%price% %currency%"
+        - "&7Max total: &f%max_total%"
+        - "&7Fulfilled: &f%fulfilled%"
+        - "&7Active: &f%active%"
   route:
     title: "&8Route Setup"
+    stop-item:
+      name: "%color%Stop #%order% &7- &f%town%"
+      lore:
+        - "&7Town: &f%town%"
+        - "&7World: &f%world%"
+        - "&7Position: &f%position%"
+        - "&7Duration: &f%duration% min"
+        - "&7Active Stop: &f%active%"
+        - "&eShift-click to remove."
     buttons:
       back:
         name: "&eBack"
@@ -162,6 +200,12 @@ gui:
           - "&7Close this menu."
     town-select:
       title: "&8Route Towns"
+      item:
+        name: "&6%town%"
+        lore:
+          - "&7Relation: &f%relation%"
+          - "&7Shop Plots: &f%shop_plots%"
+          - "&eClick to pick a random Shop Plot."
       back:
         name: "&eBack"
         lore:

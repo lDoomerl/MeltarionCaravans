@@ -353,23 +353,56 @@ public final class TradeOperationService {
             return displayItem;
         }
 
-        List<Component> lore = new ArrayList<>();
-        lore.add(LEGACY_SERIALIZER.deserialize("&7Type: &f" + tradeOperation.type().name()));
+        List<String> loreLines = new ArrayList<>();
+        loreLines.add(guiConfigManager.getString("trade-management.operation.type", "&7Type: &f%type%").replace("%type%", tradeOperation.type().name()));
         if (tradeOperation.type() == TradeOperationType.SELL) {
-            lore.add(LEGACY_SERIALIZER.deserialize("&7Amount: &f" + tradeOperation.amountPerTransaction()));
-            lore.add(LEGACY_SERIALIZER.deserialize("&7Price: &f" + tradeOperation.priceCurrencyAmount() + " " + configManager.getCurrencyItem().name()));
-            lore.add(LEGACY_SERIALIZER.deserialize("&7Slot: &f" + (tradeOperation.reservedInventorySlot() == null ? "-" : tradeOperation.reservedInventorySlot())));
-            lore.add(LEGACY_SERIALIZER.deserialize("&7Active: &f" + (tradeOperation.active() ? "yes" : "no")));
+            loreLines.addAll(replacePlaceholders(
+                guiConfigManager.getStringList("trade-management.operation.sell-lore", List.of(
+                    "&7Amount: &f%amount%",
+                    "&7Price: &f%price% %currency%",
+                    "&7Slot: &f%slot%",
+                    "&7Active: &f%active%"
+                )),
+                Map.of(
+                    "amount", String.valueOf(tradeOperation.amountPerTransaction()),
+                    "price", String.valueOf(tradeOperation.priceCurrencyAmount()),
+                    "currency", configManager.getCurrencyItem().name(),
+                    "slot", String.valueOf(tradeOperation.reservedInventorySlot() == null ? "-" : tradeOperation.reservedInventorySlot()),
+                    "active", tradeOperation.active() ? "yes" : "no"
+                )
+            ));
         } else {
-            lore.add(LEGACY_SERIALIZER.deserialize("&7Amount per transaction: &f" + tradeOperation.amountPerTransaction()));
-            lore.add(LEGACY_SERIALIZER.deserialize("&7Price: &f" + tradeOperation.priceCurrencyAmount() + " " + configManager.getCurrencyItem().name()));
-            lore.add(LEGACY_SERIALIZER.deserialize("&7Max total: &f" + (tradeOperation.maxTotalAmount() == null ? "-" : tradeOperation.maxTotalAmount())));
-            lore.add(LEGACY_SERIALIZER.deserialize("&7Fulfilled: &f" + tradeOperation.fulfilledAmount()));
-            lore.add(LEGACY_SERIALIZER.deserialize("&7Active: &f" + (tradeOperation.active() ? "yes" : "no")));
+            loreLines.addAll(replacePlaceholders(
+                guiConfigManager.getStringList("trade-management.operation.buy-lore", List.of(
+                    "&7Amount per transaction: &f%amount%",
+                    "&7Price: &f%price% %currency%",
+                    "&7Max total: &f%max_total%",
+                    "&7Fulfilled: &f%fulfilled%",
+                    "&7Active: &f%active%"
+                )),
+                Map.of(
+                    "amount", String.valueOf(tradeOperation.amountPerTransaction()),
+                    "price", String.valueOf(tradeOperation.priceCurrencyAmount()),
+                    "currency", configManager.getCurrencyItem().name(),
+                    "max_total", String.valueOf(tradeOperation.maxTotalAmount() == null ? "-" : tradeOperation.maxTotalAmount()),
+                    "fulfilled", String.valueOf(tradeOperation.fulfilledAmount()),
+                    "active", tradeOperation.active() ? "yes" : "no"
+                )
+            ));
         }
 
-        itemMeta.lore(lore);
+        itemMeta.lore(loreLines.stream().map(LEGACY_SERIALIZER::deserialize).toList());
         displayItem.setItemMeta(itemMeta);
         return displayItem;
+    }
+
+    private List<String> replacePlaceholders(List<String> lines, Map<String, String> placeholders) {
+        return lines.stream().map(line -> {
+            String output = line;
+            for (Map.Entry<String, String> entry : placeholders.entrySet()) {
+                output = output.replace('%' + entry.getKey() + '%', entry.getValue());
+            }
+            return output;
+        }).toList();
     }
 }

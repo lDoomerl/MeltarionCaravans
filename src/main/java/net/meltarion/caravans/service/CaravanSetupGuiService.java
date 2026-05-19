@@ -351,15 +351,24 @@ public final class CaravanSetupGuiService {
             && !caravan.returningHomeAfterRoute();
         return createMenuItem(
             active ? Material.COMPASS : Material.FILLED_MAP,
-            (active ? "&a" : "&6") + "Stop #" + (stop.stopOrder() + 1) + " &7- &f" + stop.townName(),
-            List.of(
-                "&7Town: &f" + stop.townName(),
-                "&7World: &f" + stop.worldName(),
-                "&7Position: &f" + String.format(Locale.US, "%.1f %.1f %.1f", stop.x(), stop.y(), stop.z()),
-                "&7Duration: &f" + Duration.ofSeconds(stop.stopDurationSeconds()).toMinutes() + " min",
-                "&7Active Stop: &f" + (active ? "yes" : "no"),
+            guiConfigManager.getString("route.stop-item.name", "%color%Stop #%order% &7- &f%town%")
+                .replace("%color%", active ? "&a" : "&6")
+                .replace("%order%", String.valueOf(stop.stopOrder() + 1))
+                .replace("%town%", stop.townName()),
+            replacePlaceholders(guiConfigManager.getStringList("route.stop-item.lore", List.of(
+                "&7Town: &f%town%",
+                "&7World: &f%world%",
+                "&7Position: &f%position%",
+                "&7Duration: &f%duration% min",
+                "&7Active Stop: &f%active%",
                 "&eShift-click to remove."
-            )
+            )), Map.of(
+                "town", stop.townName(),
+                "world", stop.worldName(),
+                "position", String.format(Locale.US, "%.1f %.1f %.1f", stop.x(), stop.y(), stop.z()),
+                "duration", String.valueOf(Duration.ofSeconds(stop.stopDurationSeconds()).toMinutes()),
+                "active", active ? "yes" : "no"
+            ))
         );
     }
 
@@ -372,12 +381,15 @@ public final class CaravanSetupGuiService {
         };
         return createMenuItem(
             icon,
-            "&6" + town.townName(),
-            List.of(
-                "&7Relation: &f" + town.relation().name(),
-                "&7Shop Plots: &f" + town.shopPlotCount(),
+            guiConfigManager.getString("route.town-select.item.name", "&6%town%").replace("%town%", town.townName()),
+            replacePlaceholders(guiConfigManager.getStringList("route.town-select.item.lore", List.of(
+                "&7Relation: &f%relation%",
+                "&7Shop Plots: &f%shop_plots%",
                 "&eClick to pick a random Shop Plot."
-            )
+            )), Map.of(
+                "relation", town.relation().name(),
+                "shop_plots", String.valueOf(town.shopPlotCount())
+            ))
         );
     }
 
