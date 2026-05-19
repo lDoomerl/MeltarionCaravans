@@ -1,15 +1,17 @@
 package net.meltarion.caravans;
 
+import java.nio.file.Path;
+import java.util.logging.Level;
 import net.meltarion.caravans.command.CaravanCommand;
 import net.meltarion.caravans.config.ConfigManager;
+import net.meltarion.caravans.listener.CaravanLicenseListener;
 import net.meltarion.caravans.service.CaravanService;
+import net.meltarion.caravans.service.CaravanLicenseService;
 import net.meltarion.caravans.service.MessageService;
 import net.meltarion.caravans.service.PersistentCaravanService;
 import net.meltarion.caravans.storage.CaravanStorage;
 import net.meltarion.caravans.storage.SQLiteCaravanStorage;
 import net.meltarion.caravans.storage.StorageException;
-import java.nio.file.Path;
-import java.util.logging.Level;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -17,6 +19,7 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
 
     private ConfigManager configManager;
     private MessageService messageService;
+    private CaravanLicenseService licenseService;
     private CaravanStorage caravanStorage;
     private CaravanService caravanService;
 
@@ -26,6 +29,7 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
 
         this.configManager = new ConfigManager(this);
         this.messageService = new MessageService(configManager);
+        this.licenseService = new CaravanLicenseService(configManager);
 
         try {
             initializeStorage();
@@ -36,6 +40,7 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
         }
 
         registerCommands();
+        getServer().getPluginManager().registerEvents(new CaravanLicenseListener(this), this);
         getLogger().info("MeltarionCaravans enabled.");
     }
 
@@ -68,12 +73,21 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
         return caravanService;
     }
 
+    public CaravanLicenseService getLicenseService() {
+        return licenseService;
+    }
+
     private void initializeStorage() throws StorageException {
         Path databasePath = getDataFolder().toPath().resolve("caravans.db");
         this.caravanStorage = new SQLiteCaravanStorage(databasePath, getLogger());
         caravanStorage.initialize();
 
-        PersistentCaravanService persistentCaravanService = new PersistentCaravanService(configManager, caravanStorage, getLogger());
+        PersistentCaravanService persistentCaravanService = new PersistentCaravanService(
+            configManager,
+            caravanStorage,
+            licenseService,
+            getLogger()
+        );
         persistentCaravanService.loadCaravans();
         this.caravanService = persistentCaravanService;
     }

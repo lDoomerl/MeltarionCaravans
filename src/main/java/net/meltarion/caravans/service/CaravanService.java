@@ -7,9 +7,23 @@ import org.bukkit.entity.Player;
 
 public interface CaravanService {
 
-    CaravanCreationResult createCaravan(Player owner, String requestedName);
+    CaravanCreationResult createDefaultCaravan(Player owner);
+
+    CaravanCreationResult createNamedCaravan(Player owner, String requestedName);
 
     List<CaravanRecord> getCaravans(UUID ownerId);
 
+    List<CaravanRecord> getCaravansByOwnerName(String ownerName);
+
+    CaravanLookupResult findCaravanForOwner(UUID ownerId, String reference);
+
+    CaravanLookupResult findCaravan(String reference);
+
+    CaravanMutationResult renameCaravan(CaravanRecord caravan, String requestedName);
+
+    CaravanMutationResult deleteCaravan(CaravanRecord caravan);
+
     int getCaravanLimit(Player player);
+
+    String getShortId(CaravanRecord caravan);
 }

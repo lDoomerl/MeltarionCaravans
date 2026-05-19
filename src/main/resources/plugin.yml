@@ -8,8 +8,7 @@ description: Caravan trading system plugin skeleton for Towny servers.
 commands:
   caravan:
     description: Main command for caravan management.
-    usage: /caravan <help|reload|create|list>
-    permission: meltarion.caravans.use
+    usage: /caravan <help|reload|create|list|info|rename|delete|admin>
     aliases: [caravans]
 permissions:
   meltarion.caravans.use:

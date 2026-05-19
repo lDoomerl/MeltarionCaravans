@@ -62,6 +62,60 @@ public final class ConfigManager {
         return config.getBoolean("caravan.virtual-movement-enabled", true);
     }
 
+    public int getMaxCaravanNameLength() {
+        return Math.max(1, config.getInt("caravan.max-name-length", 24));
+    }
+
+    public boolean isCaravanLicenseEnabled() {
+        return config.getBoolean("caravan-license.enabled", true);
+    }
+
+    public Material getCaravanLicenseMaterial() {
+        String configuredMaterial = config.getString("caravan-license.material", Material.PAPER.name());
+        Material material = Material.matchMaterial(configuredMaterial);
+        if (material != null) {
+            return material;
+        }
+
+        plugin.getLogger().warning("Invalid caravan-license.material '" + configuredMaterial + "' in config.yml. Falling back to PAPER.");
+        return Material.PAPER;
+    }
+
+    public Integer getCaravanLicenseCustomModelData() {
+        if (!config.contains("caravan-license.custom-model-data")) {
+            return null;
+        }
+        return config.getInt("caravan-license.custom-model-data");
+    }
+
+    public String getCaravanLicenseDisplayName() {
+        return config.getString("caravan-license.display-name", "&6Caravan License");
+    }
+
+    public List<String> getCaravanLicenseLore() {
+        return config.getStringList("caravan-license.lore");
+    }
+
+    public boolean isCaravanLicenseRequireDisplayName() {
+        return config.getBoolean("caravan-license.require-display-name", true);
+    }
+
+    public boolean isCaravanLicenseRequireLore() {
+        return config.getBoolean("caravan-license.require-lore", false);
+    }
+
+    public boolean isCaravanLicenseRequireCustomModelData() {
+        return config.getBoolean("caravan-license.require-custom-model-data", true);
+    }
+
+    public boolean isCaravanLicenseConsumeOnCreate() {
+        return config.getBoolean("caravan-license.consume-on-create", true);
+    }
+
+    public boolean isCaravanLicenseRightClickCreateAllowed() {
+        return config.getBoolean("caravan-license.allow-right-click-create", true);
+    }
+
     public String getMessage(String path) {
         return config.getString("messages." + path, "");
     }

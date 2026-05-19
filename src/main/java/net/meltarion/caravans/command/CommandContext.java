@@ -3,6 +3,7 @@ package net.meltarion.caravans.command;
 import net.meltarion.caravans.MeltarionCaravansPlugin;
 import net.meltarion.caravans.config.ConfigManager;
 import net.meltarion.caravans.service.CaravanService;
+import net.meltarion.caravans.service.CaravanLicenseService;
 import net.meltarion.caravans.service.MessageService;
 import org.bukkit.command.CommandSender;
 
@@ -18,6 +19,10 @@ public record CommandContext(
 
     public CaravanService caravans() {
         return plugin.getCaravanService();
+    }
+
+    public CaravanLicenseService licenses() {
+        return plugin.getLicenseService();
     }
 
     public ConfigManager config() {

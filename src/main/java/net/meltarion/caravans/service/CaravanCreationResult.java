@@ -18,9 +18,12 @@ public record CaravanCreationResult(
     }
 
     public enum FailureReason {
+        LICENSE_DISABLED,
+        MISSING_LICENSE,
         INVALID_NAME,
         DUPLICATE_NAME,
         LIMIT_REACHED,
-        STORAGE_ERROR
+        STORAGE_ERROR,
+        LICENSE_CONSUME_FAILED
     }
 }

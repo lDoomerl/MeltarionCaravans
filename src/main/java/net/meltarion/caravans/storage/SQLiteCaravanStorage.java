@@ -49,6 +49,17 @@ public final class SQLiteCaravanStorage implements CaravanStorage {
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         """;
 
+    private static final String RENAME_CARAVAN = """
+        UPDATE caravans
+        SET name = ?, updated_at = ?
+        WHERE id = ?
+        """;
+
+    private static final String DELETE_CARAVAN = """
+        DELETE FROM caravans
+        WHERE id = ?
+        """;
+
     private final Path databasePath;
     private final Logger logger;
 
@@ -119,6 +130,32 @@ public final class SQLiteCaravanStorage implements CaravanStorage {
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new StorageException("Failed to insert caravan into SQLite.", exception);
+        }
+    }
+
+    @Override
+    public synchronized void renameCaravan(UUID caravanId, String name, String updatedAt) throws StorageException {
+        ensureInitialized();
+
+        try (PreparedStatement statement = connection.prepareStatement(RENAME_CARAVAN)) {
+            statement.setString(1, name);
+            statement.setString(2, updatedAt);
+            statement.setString(3, caravanId.toString());
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new StorageException("Failed to rename caravan in SQLite.", exception);
+        }
+    }
+
+    @Override
+    public synchronized void deleteCaravan(UUID caravanId) throws StorageException {
+        ensureInitialized();
+
+        try (PreparedStatement statement = connection.prepareStatement(DELETE_CARAVAN)) {
+            statement.setString(1, caravanId.toString());
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new StorageException("Failed to delete caravan from SQLite.", exception);
         }
     }
 

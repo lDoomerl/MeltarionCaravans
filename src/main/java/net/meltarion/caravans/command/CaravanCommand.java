@@ -7,9 +7,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.stream.Collectors;
 import net.meltarion.caravans.MeltarionCaravansPlugin;
+import net.meltarion.caravans.command.subcommand.AdminSubcommand;
 import net.meltarion.caravans.command.subcommand.CreateSubcommand;
+import net.meltarion.caravans.command.subcommand.DeleteSubcommand;
 import net.meltarion.caravans.command.subcommand.HelpSubcommand;
+import net.meltarion.caravans.command.subcommand.InfoSubcommand;
 import net.meltarion.caravans.command.subcommand.ListSubcommand;
+import net.meltarion.caravans.command.subcommand.RenameSubcommand;
 import net.meltarion.caravans.command.subcommand.ReloadSubcommand;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -29,15 +33,14 @@ public final class CaravanCommand implements CommandExecutor, TabCompleter {
         register(new ReloadSubcommand());
         register(new CreateSubcommand());
         register(new ListSubcommand());
+        register(new InfoSubcommand());
+        register(new RenameSubcommand());
+        register(new DeleteSubcommand());
+        register(new AdminSubcommand());
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!sender.hasPermission("meltarion.caravans.use")) {
-            plugin.getMessageService().send(sender, "no-permission");
-            return true;
-        }
-
         CaravanSubcommand subcommand = resolveSubcommand(args);
         if (subcommand == null) {
             plugin.getMessageService().send(sender, "unknown-subcommand");
@@ -60,10 +63,6 @@ public final class CaravanCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (!sender.hasPermission("meltarion.caravans.use")) {
-            return List.of();
-        }
-
         if (args.length <= 1) {
             String current = args.length == 0 ? "" : args[0].toLowerCase(Locale.ROOT);
             return subcommands.values().stream()
@@ -86,7 +85,7 @@ public final class CaravanCommand implements CommandExecutor, TabCompleter {
         if (args.length == 0) {
             return subcommands.get("help");
         }
-        return subcommands.getOrDefault(args[0].toLowerCase(Locale.ROOT), subcommands.get("help"));
+        return subcommands.get(args[0].toLowerCase(Locale.ROOT));
     }
 
     private void register(CaravanSubcommand subcommand) {

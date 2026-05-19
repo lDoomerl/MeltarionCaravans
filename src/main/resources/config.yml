@@ -6,22 +6,77 @@ permission-limits:
 
 caravan:
   max-hp: 5000
+  max-name-length: 24
   virtual-movement-enabled: true
+
+caravan-license:
+  enabled: true
+  material: PAPER
+  custom-model-data: 10001
+  display-name: "&6Caravan License"
+  lore:
+    - "&7Required to create one caravan."
+  require-display-name: true
+  require-lore: false
+  require-custom-model-data: true
+  consume-on-create: true
+  allow-right-click-create: true
 
 messages:
   no-permission: "&cYou do not have permission."
   player-only: "&cOnly players can use this command."
   reloaded: "&aMeltarionCaravans reloaded."
   created: "&aCreated caravan &f%name%&a."
+  right-click-created: "&aYou have summoned a new caravan: &e%name%&a."
   duplicate-name: "&cYou already have a caravan named &f%name%&c."
   limit-reached: "&cYou have reached your caravan limit of &f%limit%&c."
   storage-error: "&cA storage error occurred. Please contact an administrator."
+  invalid-name: "&cInvalid caravan name."
+  missing-license: "&cYou need a Caravan License to create a caravan."
+  license-consumed: "&7Caravan License consumed."
+  license-disabled: "&cCaravan licenses are currently disabled."
+  right-click-failed: "&cCould not create a caravan."
+  renamed: "&aRenamed caravan &f%id%&a to &f%name%&a."
+  deleted: "&aDeleted caravan &f%name% &7(%id%)&a."
+  caravan-not-found: "&cCaravan not found."
+  ambiguous-id: "&cThat caravan ID is ambiguous. Please use the full UUID."
+  player-not-found: "&cPlayer &f%player%&c was not found."
+  invalid-amount: "&cAmount must be between 1 and 64."
+  license-given: "&aGave &f%amount%&a Caravan License(s) to &f%player%&a."
+  license-received: "&aYou received &f%amount%&a Caravan License(s)."
+  player-has-no-caravans: "&7%player% has no caravans."
   list-header: "&6Your caravans:"
-  list-entry: "&e- %name%"
+  list-entry: "&e- [%id%] %name% &7(%status%, %hp%/%max_hp% HP)"
   list-empty: "&7You do not have any caravans yet."
-  create-usage: "&cUsage: /caravan create <name>"
+  admin-list-header: "&6Caravans for &f%player%&6:"
+  admin-list-entry: "&e- [%id%] %name% &7(%player%, %status%, %hp%/%max_hp% HP)"
+  create-usage: "&cUsage: /caravan create [name]"
+  info-usage: "&cUsage: /caravan info <id>"
+  rename-usage: "&cUsage: /caravan rename <id> <new name>"
+  delete-usage: "&cUsage: /caravan delete <id>"
+  admin-list-usage: "&cUsage: /caravan admin list <player>"
+  admin-info-usage: "&cUsage: /caravan admin info <id>"
+  admin-delete-usage: "&cUsage: /caravan admin delete <id>"
+  admin-givelicense-usage: "&cUsage: /caravan admin givelicense <player> [amount]"
   unknown-subcommand: "&cUnknown subcommand. Use /caravan help."
+  info:
+    - "&6Caravan Info"
+    - "&7ID: &f%id%"
+    - "&7Owner: &f%player%"
+    - "&7Name: &f%name%"
+    - "&7Status: &f%status%"
+    - "&7HP: &f%hp%&7/&f%max_hp%"
   help:
-    - "&6/caravan create <name> &7- Create a caravan"
+    - "&6/caravan create [name] &7- Create a caravan"
     - "&6/caravan list &7- List your caravans"
+    - "&6/caravan info <id> &7- View caravan details"
+    - "&6/caravan rename <id> <name> &7- Rename your caravan"
+    - "&6/caravan delete <id> &7- Delete your caravan"
     - "&6/caravan reload &7- Reload the plugin configuration"
+    - "&6/caravan admin ... &7- Administrative caravan commands"
+  admin-help:
+    - "&6/caravan admin list <player> &7- List a player's caravans"
+    - "&6/caravan admin info <id> &7- View any caravan"
+    - "&6/caravan admin delete <id> &7- Delete any caravan"
+    - "&6/caravan admin reload &7- Reload the plugin configuration"
+    - "&6/caravan admin givelicense <player> [amount] &7- Give Caravan Licenses"
