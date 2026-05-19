@@ -66,6 +66,18 @@ projection:
 interaction:
   cooldown-millis: 500
 
+route:
+  enabled: true
+  setup-timeout-seconds: 60
+  min-stop-minutes: 1
+  max-stop-minutes: 1440
+  max-stops-per-caravan: 10
+  allow-own-town: true
+  allow-allied-towns: true
+  allow-neutral-towns: true
+  allow-enemy-towns: false
+  random-shop-plot-selection: true
+
 physical-caravan:
   enabled: true
   despawn-on-plugin-disable: true
@@ -197,6 +209,8 @@ messages:
   admin-move-usage: "&cUsage: /caravan admin move <id> <world> <x> <z>"
   admin-position-usage: "&cUsage: /caravan admin position <id>"
   admin-debug-usage: "&cUsage: /caravan admin debug <id>"
+  admin-routeinfo-usage: "&cUsage: /caravan admin routeinfo <id>"
+  admin-routeclear-usage: "&cUsage: /caravan admin routeclear <id>"
   admin-return-usage: "&cUsage: /caravan admin return <id>"
   admin-givelicense-usage: "&cUsage: /caravan admin givelicense <player> [amount]"
   move-usage: "&cUsage: /caravan move <id> <x> <z>"
@@ -213,6 +227,28 @@ messages:
   movement-paused-attacked: "&cCaravan &f%name% &7(%id%) &chas paused because it was attacked."
   projection-spawned: "&7Projection spawned for caravan &f%name% &7(%id%)&7."
   projection-despawned: "&7Projection despawned for caravan &f%name% &7(%id%)&7."
+  route-menu-opened: "&aOpened route setup for &f%name% &7(%id%)&a."
+  route-stop-added: "&aAdded route stop &f#%order%&a in &f%town%&a for &f%duration%&a minute(s)."
+  route-stop-removed: "&eRemoved route stop &f#%order%&e in &f%town%&e."
+  route-cleared: "&eCleared all route stops for &f%name% &7(%id%)&e."
+  route-started: "&aRoute started for &f%name% &7(%id%)&a toward &f%town%&a. ETA: &f%eta%&a s."
+  route-stopped: "&eRoute stopped for &f%name% &7(%id%)&e."
+  route-arrived-stop: "&aCaravan &f%name% &7(%id%) &aarrived at stop &f#%order%&a in &f%town%&a."
+  route-stop-timer-started: "&eStop timer started for &f%town%&e: &f%duration%&e minute(s)."
+  route-stop-timer-finished: "&eStop timer finished for &f%town%&e. Continuing route."
+  route-returning-home: "&aCaravan &f%name% &7(%id%) &ais returning home."
+  route-finished: "&aCaravan &f%name% &7(%id%) &afinished its route."
+  route-no-stops: "&cThis caravan has no configured route stops."
+  route-towny-missing: "&cTowny is required for route setup, but it is not available."
+  route-no-available-towns: "&cNo available Towny towns with Shop Plots were found."
+  route-no-shop-plots: "&cThat town has no usable Shop Plots."
+  route-invalid-duration: "&cStop duration must be within the configured limit."
+  route-duration-prompt: "&eType stop duration in minutes for &f%town%&e, or type cancel. Timeout: &f%timeout%&e seconds."
+  route-setup-cancelled: "&eRoute setup cancelled."
+  route-setup-timeout: "&cRoute setup timed out after &f%timeout%&c seconds."
+  route-public-trade-only-when-stopped: "&cThis caravan can trade publicly only while stopped."
+  route-max-stops-reached: "&cThis caravan has reached its maximum number of route stops."
+  route-not-running: "&cThis caravan route is not currently running."
   movement-position-info:
     - "&6Caravan Position"
     - "&7ID: &f%id%"
@@ -224,6 +260,9 @@ messages:
     - "&7Speed: &f%speed%"
     - "&7ETA: &f%eta%"
     - "&7Physical Projection: &f%physical_spawned%"
+  route-info-header:
+    - "&6Route Stops For &f%name% &7(%id%)"
+  route-info-entry: "&e#%order% &7- &f%town% &7(%duration% min)"
   debug-info:
     - "&6Caravan Debug"
     - "&7ID: &f%id%"
@@ -270,6 +309,8 @@ messages:
     - "&6/caravan admin move <id> <world> <x> <z> &7- Start admin movement"
     - "&6/caravan admin position <id> &7- Show virtual caravan position"
     - "&6/caravan admin debug <id> &7- Show deep runtime debug info"
+    - "&6/caravan admin routeinfo <id> &7- Show configured route stops"
+    - "&6/caravan admin routeclear <id> &7- Clear all route stops"
     - "&6/caravan admin return <id> &7- Send a caravan to its home"
     - "&6/caravan admin trades <id> &7- Open the trade management GUI"
     - "&6/caravan admin sell <id> <slot> <price> &7- Create a SELL operation"

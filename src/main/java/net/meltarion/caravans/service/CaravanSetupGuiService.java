@@ -1,5 +1,6 @@
 package net.meltarion.caravans.service;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumMap;
@@ -15,9 +16,12 @@ import net.meltarion.caravans.config.ConfigManager;
 import net.meltarion.caravans.inventory.CaravanBuyCategoryHolder;
 import net.meltarion.caravans.inventory.CaravanBuyMaterialHolder;
 import net.meltarion.caravans.inventory.CaravanInfoHolder;
+import net.meltarion.caravans.inventory.CaravanRouteSetupHolder;
 import net.meltarion.caravans.inventory.CaravanSellSetupHolder;
 import net.meltarion.caravans.inventory.CaravanSetupHolder;
+import net.meltarion.caravans.inventory.CaravanTownSelectHolder;
 import net.meltarion.caravans.model.CaravanRecord;
+import net.meltarion.caravans.model.CaravanRouteStopRecord;
 import net.meltarion.caravans.storage.StorageException;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -31,19 +35,27 @@ public final class CaravanSetupGuiService {
 
     private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.legacyAmpersand();
     private static final int BUY_MATERIALS_PER_PAGE = 45;
+    private static final int ROUTE_STOPS_PER_PAGE = 45;
+    private static final int TOWNS_PER_PAGE = 45;
 
     private final ConfigManager configManager;
     private final CaravanInventoryService inventoryService;
     private final TradeOperationService tradeOperationService;
+    private final CaravanRouteService caravanRouteService;
+    private final TownyIntegrationService townyIntegrationService;
 
     public CaravanSetupGuiService(
         ConfigManager configManager,
         CaravanInventoryService inventoryService,
-        TradeOperationService tradeOperationService
+        TradeOperationService tradeOperationService,
+        CaravanRouteService caravanRouteService,
+        TownyIntegrationService townyIntegrationService
     ) {
         this.configManager = configManager;
         this.inventoryService = inventoryService;
         this.tradeOperationService = tradeOperationService;
+        this.caravanRouteService = caravanRouteService;
+        this.townyIntegrationService = townyIntegrationService;
     }
 
     public void openMainSetup(Player player, CaravanRecord caravan) {
@@ -56,6 +68,7 @@ public final class CaravanSetupGuiService {
         inventory.setItem(12, createMenuItem(Material.WRITABLE_BOOK, "&bBuy Orders", List.of("&7Create caravan buy orders.")));
         inventory.setItem(13, createMenuItem(Material.BOOK, "&eExisting Trades", List.of("&7Manage active trade operations.")));
         inventory.setItem(14, createMenuItem(Material.COMPASS, "&dInfo", List.of("&7View caravan details.")));
+        inventory.setItem(15, createMenuItem(Material.MAP, "&9Route", List.of("&7Configure caravan route stops.")));
         inventory.setItem(16, createMenuItem(Material.BARRIER, "&cClose", List.of("&7Close this menu.")));
 
         player.openInventory(inventory);
@@ -154,6 +167,68 @@ public final class CaravanSetupGuiService {
         player.openInventory(inventory);
     }
 
+    public void openRouteSetup(Player player, CaravanRecord caravan, int page) {
+        CaravanRouteSetupHolder holder = new CaravanRouteSetupHolder(caravan.id(), page);
+        Inventory inventory = Bukkit.createInventory(holder, 54, LEGACY_SERIALIZER.deserialize("&8Route Setup"));
+        holder.setInventory(inventory);
+        populateRouteSetup(inventory, caravan, page);
+        player.openInventory(inventory);
+    }
+
+    public void populateRouteSetup(Inventory inventory, CaravanRecord caravan, int page) {
+        inventory.clear();
+        List<CaravanRouteStopRecord> stops = caravanRouteService.getRouteStops(caravan.id());
+        int start = page * ROUTE_STOPS_PER_PAGE;
+        int end = Math.min(start + ROUTE_STOPS_PER_PAGE, stops.size());
+        for (int slot = 0; slot < end - start; slot++) {
+            inventory.setItem(slot, createRouteStopItem(stops.get(start + slot)));
+        }
+
+        inventory.setItem(45, createMenuItem(Material.ARROW, "&eBack", List.of("&7Return to caravan setup.")));
+        inventory.setItem(46, createMenuItem(Material.EMERALD, "&aAdd Route Stop", List.of("&7Choose a Towny town and stop time.")));
+        inventory.setItem(48, createMenuItem(Material.MINECART, "&aStart Route", List.of("&7Begin running this caravan route.")));
+        inventory.setItem(49, createMenuItem(Material.REDSTONE, "&cStop Route", List.of("&7Stop the running route.")));
+        inventory.setItem(50, createMenuItem(Material.LAVA_BUCKET, "&cClear Route", List.of("&7Remove all configured route stops.")));
+        if (page > 0) {
+            inventory.setItem(51, createMenuItem(Material.SPECTRAL_ARROW, "&ePrevious", List.of("&7Go to previous page.")));
+        }
+        if ((page + 1) * ROUTE_STOPS_PER_PAGE < stops.size()) {
+            inventory.setItem(52, createMenuItem(Material.ARROW, "&eNext", List.of("&7Go to next page.")));
+        }
+        inventory.setItem(53, createMenuItem(Material.BARRIER, "&cClose", List.of("&7Close this menu.")));
+    }
+
+    public void openTownSelection(Player player, CaravanRecord caravan, int page) {
+        CaravanTownSelectHolder holder = new CaravanTownSelectHolder(caravan.id(), page);
+        Inventory inventory = Bukkit.createInventory(holder, 54, LEGACY_SERIALIZER.deserialize("&8Route Towns"));
+        holder.setInventory(inventory);
+        populateTownSelection(inventory, player, page);
+        player.openInventory(inventory);
+    }
+
+    public void populateTownSelection(Inventory inventory, Player player, int page) {
+        inventory.clear();
+        List<RouteTownOption> towns = townyIntegrationService.listAvailableRouteTowns(player);
+        int start = page * TOWNS_PER_PAGE;
+        int end = Math.min(start + TOWNS_PER_PAGE, towns.size());
+        for (int slot = 0; slot < end - start; slot++) {
+            inventory.setItem(slot, createTownItem(towns.get(start + slot)));
+        }
+
+        inventory.setItem(45, createMenuItem(Material.ARROW, "&eBack", List.of("&7Return to route setup.")));
+        if (page > 0) {
+            inventory.setItem(48, createMenuItem(Material.SPECTRAL_ARROW, "&ePrevious", List.of("&7Go to previous page.")));
+        }
+        if ((page + 1) * TOWNS_PER_PAGE < towns.size()) {
+            inventory.setItem(50, createMenuItem(Material.ARROW, "&eNext", List.of("&7Go to next page.")));
+        }
+        inventory.setItem(53, createMenuItem(Material.BARRIER, "&cClose", List.of("&7Close this menu.")));
+    }
+
+    public List<RouteTownOption> getAvailableRouteTowns(Player player) {
+        return townyIntegrationService.listAvailableRouteTowns(player);
+    }
+
     public List<TradeCatalogCategory> getAvailableCategories() {
         return getCatalog().entrySet().stream()
             .filter(entry -> !entry.getValue().isEmpty())
@@ -243,6 +318,38 @@ public final class CaravanSetupGuiService {
         itemMeta.addItemFlags(ItemFlag.values());
         itemStack.setItemMeta(itemMeta);
         return itemStack;
+    }
+
+    private ItemStack createRouteStopItem(CaravanRouteStopRecord stop) {
+        return createMenuItem(
+            Material.FILLED_MAP,
+            "&6Stop #" + (stop.stopOrder() + 1) + " &7- &f" + stop.townName(),
+            List.of(
+                "&7Town: &f" + stop.townName(),
+                "&7World: &f" + stop.worldName(),
+                "&7Position: &f" + String.format(Locale.US, "%.1f %.1f %.1f", stop.x(), stop.y(), stop.z()),
+                "&7Duration: &f" + Duration.ofSeconds(stop.stopDurationSeconds()).toMinutes() + " min",
+                "&eShift-click to remove."
+            )
+        );
+    }
+
+    private ItemStack createTownItem(RouteTownOption town) {
+        Material icon = switch (town.relation()) {
+            case OWN -> Material.GREEN_BANNER;
+            case ALLIED -> Material.LIGHT_BLUE_BANNER;
+            case NEUTRAL -> Material.WHITE_BANNER;
+            case ENEMY -> Material.RED_BANNER;
+        };
+        return createMenuItem(
+            icon,
+            "&6" + town.townName(),
+            List.of(
+                "&7Relation: &f" + town.relation().name(),
+                "&7Shop Plots: &f" + town.shopPlotCount(),
+                "&eClick to pick a random Shop Plot."
+            )
+        );
     }
 
     private String prettifyMaterial(Material material) {

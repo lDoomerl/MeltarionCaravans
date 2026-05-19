@@ -17,12 +17,13 @@ import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.meltarion.caravans.model.CaravanRecord;
+import net.meltarion.caravans.model.CaravanRouteStopRecord;
 import net.meltarion.caravans.model.CaravanStatus;
 import net.meltarion.caravans.model.TradeOperationRecord;
 import net.meltarion.caravans.model.TradeOperationType;
 import net.meltarion.caravans.util.ItemStackSerializationUtil;
 
-public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInventoryStorage, TradeOperationStorage {
+public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInventoryStorage, TradeOperationStorage, CaravanRouteStorage {
 
     private static final String CREATE_CARAVANS_TABLE = """
         CREATE TABLE IF NOT EXISTS caravans (
@@ -50,6 +51,11 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
             home_x REAL,
             home_y REAL,
             home_z REAL,
+            current_route_stop_index INTEGER,
+            route_running INTEGER NOT NULL DEFAULT 0,
+            current_stop_started_at TEXT,
+            current_stop_ends_at TEXT,
+            returning_home_after_route INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         )
@@ -102,12 +108,40 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
         ON trade_operations (active)
         """;
 
+    private static final String CREATE_ROUTE_STOPS_TABLE = """
+        CREATE TABLE IF NOT EXISTS caravan_route_stops (
+            id TEXT PRIMARY KEY,
+            caravan_id TEXT NOT NULL,
+            stop_order INTEGER NOT NULL,
+            town_name TEXT NOT NULL,
+            world_name TEXT NOT NULL,
+            x REAL NOT NULL,
+            y REAL NOT NULL,
+            z REAL NOT NULL,
+            stop_duration_seconds INTEGER NOT NULL,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (caravan_id) REFERENCES caravans(id) ON DELETE CASCADE
+        )
+        """;
+
+    private static final String CREATE_ROUTE_CARAVAN_INDEX = """
+        CREATE INDEX IF NOT EXISTS idx_caravan_route_stops_caravan_id
+        ON caravan_route_stops (caravan_id)
+        """;
+
+    private static final String CREATE_ROUTE_CARAVAN_ORDER_INDEX = """
+        CREATE INDEX IF NOT EXISTS idx_caravan_route_stops_caravan_order
+        ON caravan_route_stops (caravan_id, stop_order)
+        """;
+
     private static final String SELECT_ALL_CARAVANS = """
         SELECT id, owner_uuid, owner_name, name, status, hp, max_hp,
                world_name, virtual_x, virtual_y, virtual_z,
                target_world_name, target_x, target_y, target_z,
                movement_started_at, movement_updated_at, speed_blocks_per_second, eta_seconds, physical_spawned,
                home_world_name, home_x, home_y, home_z,
+               current_route_stop_index, route_running, current_stop_started_at, current_stop_ends_at, returning_home_after_route,
                created_at, updated_at
         FROM caravans
         ORDER BY created_at ASC
@@ -120,9 +154,10 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
             target_world_name, target_x, target_y, target_z,
             movement_started_at, movement_updated_at, speed_blocks_per_second, eta_seconds, physical_spawned,
             home_world_name, home_x, home_y, home_z,
+            current_route_stop_index, route_running, current_stop_started_at, current_stop_ends_at, returning_home_after_route,
             created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """;
 
     private static final String RENAME_CARAVAN = """
@@ -148,7 +183,9 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
             world_name = ?, virtual_x = ?, virtual_y = ?, virtual_z = ?,
             target_world_name = ?, target_x = ?, target_y = ?, target_z = ?,
             movement_started_at = ?, movement_updated_at = ?, speed_blocks_per_second = ?, eta_seconds = ?, physical_spawned = ?,
-            home_world_name = ?, home_x = ?, home_y = ?, home_z = ?, updated_at = ?
+            home_world_name = ?, home_x = ?, home_y = ?, home_z = ?,
+            current_route_stop_index = ?, route_running = ?, current_stop_started_at = ?, current_stop_ends_at = ?, returning_home_after_route = ?,
+            updated_at = ?
         WHERE id = ?
         """;
 
@@ -209,6 +246,34 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
         WHERE caravan_id = ?
         """;
 
+    private static final String SELECT_ALL_ROUTE_STOPS = """
+        SELECT id, caravan_id, stop_order, town_name, world_name, x, y, z, stop_duration_seconds, created_at, updated_at
+        FROM caravan_route_stops
+        ORDER BY caravan_id ASC, stop_order ASC, created_at ASC
+        """;
+
+    private static final String INSERT_ROUTE_STOP = """
+        INSERT INTO caravan_route_stops (
+            id, caravan_id, stop_order, town_name, world_name, x, y, z, stop_duration_seconds, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """;
+
+    private static final String UPDATE_ROUTE_STOP = """
+        UPDATE caravan_route_stops
+        SET stop_order = ?, town_name = ?, world_name = ?, x = ?, y = ?, z = ?, stop_duration_seconds = ?, updated_at = ?
+        WHERE id = ?
+        """;
+
+    private static final String DELETE_ROUTE_STOP = """
+        DELETE FROM caravan_route_stops
+        WHERE id = ?
+        """;
+
+    private static final String DELETE_ROUTE_STOPS_BY_CARAVAN = """
+        DELETE FROM caravan_route_stops
+        WHERE caravan_id = ?
+        """;
+
     private final Path databasePath;
     private final Logger logger;
 
@@ -238,6 +303,9 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
                 statement.executeUpdate(CREATE_TRADE_CARAVAN_INDEX);
                 statement.executeUpdate(CREATE_TRADE_TYPE_INDEX);
                 statement.executeUpdate(CREATE_TRADE_ACTIVE_INDEX);
+                statement.executeUpdate(CREATE_ROUTE_STOPS_TABLE);
+                statement.executeUpdate(CREATE_ROUTE_CARAVAN_INDEX);
+                statement.executeUpdate(CREATE_ROUTE_CARAVAN_ORDER_INDEX);
             }
 
             logger.info("Initialized SQLite caravan storage at " + databasePath.toAbsolutePath() + '.');
@@ -298,8 +366,13 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
             setNullableDouble(statement, 22, caravan.homeX());
             setNullableDouble(statement, 23, caravan.homeY());
             setNullableDouble(statement, 24, caravan.homeZ());
-            statement.setString(25, caravan.createdAt().toString());
-            statement.setString(26, caravan.updatedAt().toString());
+            setNullableInteger(statement, 25, caravan.currentRouteStopIndex());
+            statement.setInt(26, caravan.routeRunning() ? 1 : 0);
+            setNullableInstant(statement, 27, caravan.currentStopStartedAt());
+            setNullableInstant(statement, 28, caravan.currentStopEndsAt());
+            statement.setInt(29, caravan.returningHomeAfterRoute() ? 1 : 0);
+            statement.setString(30, caravan.createdAt().toString());
+            statement.setString(31, caravan.updatedAt().toString());
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new StorageException("Failed to insert caravan into SQLite.", exception);
@@ -333,8 +406,13 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
             setNullableDouble(statement, 20, caravan.homeX());
             setNullableDouble(statement, 21, caravan.homeY());
             setNullableDouble(statement, 22, caravan.homeZ());
-            statement.setString(23, caravan.updatedAt().toString());
-            statement.setString(24, caravan.id().toString());
+            setNullableInteger(statement, 23, caravan.currentRouteStopIndex());
+            statement.setInt(24, caravan.routeRunning() ? 1 : 0);
+            setNullableInstant(statement, 25, caravan.currentStopStartedAt());
+            setNullableInstant(statement, 26, caravan.currentStopEndsAt());
+            statement.setInt(27, caravan.returningHomeAfterRoute() ? 1 : 0);
+            statement.setString(28, caravan.updatedAt().toString());
+            statement.setString(29, caravan.id().toString());
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new StorageException("Failed to update caravan in SQLite.", exception);
@@ -393,12 +471,16 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
 
             try (PreparedStatement deleteInventory = connection.prepareStatement(DELETE_CARAVAN_INVENTORY);
                  PreparedStatement deleteTradeOperations = connection.prepareStatement(DELETE_TRADE_OPERATIONS_BY_CARAVAN);
+                 PreparedStatement deleteRouteStops = connection.prepareStatement(DELETE_ROUTE_STOPS_BY_CARAVAN);
                  PreparedStatement deleteCaravan = connection.prepareStatement(DELETE_CARAVAN)) {
                 deleteInventory.setString(1, caravanId.toString());
                 deleteInventory.executeUpdate();
 
                 deleteTradeOperations.setString(1, caravanId.toString());
                 deleteTradeOperations.executeUpdate();
+
+                deleteRouteStops.setString(1, caravanId.toString());
+                deleteRouteStops.executeUpdate();
 
                 deleteCaravan.setString(1, caravanId.toString());
                 deleteCaravan.executeUpdate();
@@ -582,6 +664,101 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
     }
 
     @Override
+    public synchronized List<CaravanRouteStopRecord> loadAllRouteStops() throws StorageException {
+        ensureInitialized();
+
+        List<CaravanRouteStopRecord> routeStops = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(SELECT_ALL_ROUTE_STOPS);
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                routeStops.add(new CaravanRouteStopRecord(
+                    UUID.fromString(resultSet.getString("id")),
+                    UUID.fromString(resultSet.getString("caravan_id")),
+                    resultSet.getInt("stop_order"),
+                    resultSet.getString("town_name"),
+                    resultSet.getString("world_name"),
+                    resultSet.getDouble("x"),
+                    resultSet.getDouble("y"),
+                    resultSet.getDouble("z"),
+                    resultSet.getInt("stop_duration_seconds"),
+                    Instant.parse(resultSet.getString("created_at")),
+                    Instant.parse(resultSet.getString("updated_at"))
+                ));
+            }
+        } catch (SQLException exception) {
+            throw new StorageException("Failed to load caravan route stops from SQLite.", exception);
+        }
+
+        return routeStops;
+    }
+
+    @Override
+    public synchronized void insertRouteStop(CaravanRouteStopRecord routeStop) throws StorageException {
+        ensureInitialized();
+
+        try (PreparedStatement statement = connection.prepareStatement(INSERT_ROUTE_STOP)) {
+            statement.setString(1, routeStop.id().toString());
+            statement.setString(2, routeStop.caravanId().toString());
+            statement.setInt(3, routeStop.stopOrder());
+            statement.setString(4, routeStop.townName());
+            statement.setString(5, routeStop.worldName());
+            statement.setDouble(6, routeStop.x());
+            statement.setDouble(7, routeStop.y());
+            statement.setDouble(8, routeStop.z());
+            statement.setInt(9, routeStop.stopDurationSeconds());
+            statement.setString(10, routeStop.createdAt().toString());
+            statement.setString(11, routeStop.updatedAt().toString());
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new StorageException("Failed to insert caravan route stop into SQLite.", exception);
+        }
+    }
+
+    @Override
+    public synchronized void updateRouteStop(CaravanRouteStopRecord routeStop) throws StorageException {
+        ensureInitialized();
+
+        try (PreparedStatement statement = connection.prepareStatement(UPDATE_ROUTE_STOP)) {
+            statement.setInt(1, routeStop.stopOrder());
+            statement.setString(2, routeStop.townName());
+            statement.setString(3, routeStop.worldName());
+            statement.setDouble(4, routeStop.x());
+            statement.setDouble(5, routeStop.y());
+            statement.setDouble(6, routeStop.z());
+            statement.setInt(7, routeStop.stopDurationSeconds());
+            statement.setString(8, routeStop.updatedAt().toString());
+            statement.setString(9, routeStop.id().toString());
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new StorageException("Failed to update caravan route stop in SQLite.", exception);
+        }
+    }
+
+    @Override
+    public synchronized void deleteRouteStop(UUID routeStopId) throws StorageException {
+        ensureInitialized();
+
+        try (PreparedStatement statement = connection.prepareStatement(DELETE_ROUTE_STOP)) {
+            statement.setString(1, routeStopId.toString());
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new StorageException("Failed to delete caravan route stop from SQLite.", exception);
+        }
+    }
+
+    @Override
+    public synchronized void deleteRouteStopsByCaravan(UUID caravanId) throws StorageException {
+        ensureInitialized();
+
+        try (PreparedStatement statement = connection.prepareStatement(DELETE_ROUTE_STOPS_BY_CARAVAN)) {
+            statement.setString(1, caravanId.toString());
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new StorageException("Failed to delete caravan route stops from SQLite.", exception);
+        }
+    }
+
+    @Override
     public synchronized void close() throws StorageException {
         if (connection == null) {
             return;
@@ -624,6 +801,11 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
                 getNullableDouble(resultSet, "home_x"),
                 getNullableDouble(resultSet, "home_y"),
                 getNullableDouble(resultSet, "home_z"),
+                getNullableInteger(resultSet, "current_route_stop_index"),
+                resultSet.getInt("route_running") == 1,
+                parseNullableInstant(resultSet.getString("current_stop_started_at")),
+                parseNullableInstant(resultSet.getString("current_stop_ends_at")),
+                resultSet.getInt("returning_home_after_route") == 1,
                 Instant.parse(resultSet.getString("created_at")),
                 Instant.parse(resultSet.getString("updated_at"))
             );
@@ -692,6 +874,11 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
         addCaravanColumnIfMissing(statement, columns, "home_x", "ALTER TABLE caravans ADD COLUMN home_x REAL");
         addCaravanColumnIfMissing(statement, columns, "home_y", "ALTER TABLE caravans ADD COLUMN home_y REAL");
         addCaravanColumnIfMissing(statement, columns, "home_z", "ALTER TABLE caravans ADD COLUMN home_z REAL");
+        addCaravanColumnIfMissing(statement, columns, "current_route_stop_index", "ALTER TABLE caravans ADD COLUMN current_route_stop_index INTEGER");
+        addCaravanColumnIfMissing(statement, columns, "route_running", "ALTER TABLE caravans ADD COLUMN route_running INTEGER NOT NULL DEFAULT 0");
+        addCaravanColumnIfMissing(statement, columns, "current_stop_started_at", "ALTER TABLE caravans ADD COLUMN current_stop_started_at TEXT");
+        addCaravanColumnIfMissing(statement, columns, "current_stop_ends_at", "ALTER TABLE caravans ADD COLUMN current_stop_ends_at TEXT");
+        addCaravanColumnIfMissing(statement, columns, "returning_home_after_route", "ALTER TABLE caravans ADD COLUMN returning_home_after_route INTEGER NOT NULL DEFAULT 0");
     }
 
     private void addCaravanColumnIfMissing(Statement statement, Set<String> existingColumns, String column, String sql) throws SQLException {

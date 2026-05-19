@@ -58,6 +58,9 @@ public final class PublicTradeService {
             if (!isOnShopPlot(caravan.id())) {
                 return failure("public-trade-shop-plot-required", caravan, latestOperation);
             }
+            if (caravan.status() != net.meltarion.caravans.model.CaravanStatus.STOPPED) {
+                return failure("route-public-trade-only-when-stopped", caravan, latestOperation);
+            }
             Inventory caravanInventory = inventoryService.getInventory(caravan);
             playerSnapshot = cloneContents(player.getInventory());
             caravanSnapshot = cloneContents(caravanInventory);
@@ -164,6 +167,9 @@ public final class PublicTradeService {
             }
             if (!isOnShopPlot(caravan.id())) {
                 return failure("public-trade-shop-plot-required", caravan, latestOperation);
+            }
+            if (caravan.status() != net.meltarion.caravans.model.CaravanStatus.STOPPED) {
+                return failure("route-public-trade-only-when-stopped", caravan, latestOperation);
             }
             int remainingWanted = remainingForBuy(latestOperation);
             if (remainingWanted < latestOperation.amountPerTransaction()) {

@@ -35,6 +35,7 @@ public final class CaravanMovementService {
 
     private BukkitTask movementTask;
     private Instant lastPeriodicSaveAt;
+    private CaravanRouteService caravanRouteService;
 
     public CaravanMovementService(
         Plugin plugin,
@@ -66,6 +67,10 @@ public final class CaravanMovementService {
 
         long periodTicks = configManager.getMovementTickIntervalSeconds() * 20L;
         this.movementTask = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, periodTicks, periodTicks);
+    }
+
+    public void setCaravanRouteService(CaravanRouteService caravanRouteService) {
+        this.caravanRouteService = caravanRouteService;
     }
 
     public void shutdown() {
@@ -271,6 +276,11 @@ public final class CaravanMovementService {
             current.homeX(),
             current.homeY(),
             current.homeZ(),
+            current.currentRouteStopIndex(),
+            current.routeRunning(),
+            current.currentStopStartedAt(),
+            current.currentStopEndsAt(),
+            current.returningHomeAfterRoute(),
             caravan.createdAt(),
             now
         );
@@ -390,6 +400,9 @@ public final class CaravanMovementService {
         Player owner = Bukkit.getPlayer(arrived.ownerId());
         if (owner != null && owner.isOnline()) {
             messageService.send(owner, "movement-arrived", placeholders(arrived));
+        }
+        if (caravanRouteService != null) {
+            caravanRouteService.handleMovementArrival(arrived);
         }
         return arrived;
     }

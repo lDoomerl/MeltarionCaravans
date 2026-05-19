@@ -28,6 +28,11 @@ public record CaravanRecord(
     Double homeX,
     Double homeY,
     Double homeZ,
+    Integer currentRouteStopIndex,
+    boolean routeRunning,
+    Instant currentStopStartedAt,
+    Instant currentStopEndsAt,
+    boolean returningHomeAfterRoute,
     Instant createdAt,
     Instant updatedAt
 ) {
@@ -70,6 +75,11 @@ public record CaravanRecord(
             homeX,
             homeY,
             homeZ,
+            currentRouteStopIndex,
+            routeRunning,
+            currentStopStartedAt,
+            currentStopEndsAt,
+            returningHomeAfterRoute,
             createdAt,
             newUpdatedAt
         );
@@ -101,6 +111,11 @@ public record CaravanRecord(
             homeX,
             homeY,
             homeZ,
+            currentRouteStopIndex,
+            routeRunning,
+            currentStopStartedAt,
+            currentStopEndsAt,
+            returningHomeAfterRoute,
             createdAt,
             newUpdatedAt
         );
@@ -148,6 +163,11 @@ public record CaravanRecord(
             homeX,
             homeY,
             homeZ,
+            currentRouteStopIndex,
+            routeRunning,
+            currentStopStartedAt,
+            currentStopEndsAt,
+            returningHomeAfterRoute,
             createdAt,
             newUpdatedAt
         );
@@ -179,6 +199,11 @@ public record CaravanRecord(
             updatedHomeX,
             updatedHomeY,
             updatedHomeZ,
+            currentRouteStopIndex,
+            routeRunning,
+            currentStopStartedAt,
+            currentStopEndsAt,
+            returningHomeAfterRoute,
             createdAt,
             newUpdatedAt
         );
@@ -210,6 +235,54 @@ public record CaravanRecord(
             homeX,
             homeY,
             homeZ,
+            currentRouteStopIndex,
+            routeRunning,
+            currentStopStartedAt,
+            currentStopEndsAt,
+            returningHomeAfterRoute,
+            createdAt,
+            newUpdatedAt
+        );
+    }
+
+    public CaravanRecord withRouteState(
+        Integer updatedCurrentRouteStopIndex,
+        boolean updatedRouteRunning,
+        Instant updatedCurrentStopStartedAt,
+        Instant updatedCurrentStopEndsAt,
+        boolean updatedReturningHomeAfterRoute,
+        Instant newUpdatedAt
+    ) {
+        return new CaravanRecord(
+            id,
+            ownerId,
+            ownerName,
+            name,
+            status,
+            hp,
+            maxHp,
+            worldName,
+            virtualX,
+            virtualY,
+            virtualZ,
+            targetWorldName,
+            targetX,
+            targetY,
+            targetZ,
+            movementStartedAt,
+            movementUpdatedAt,
+            speedBlocksPerSecond,
+            etaSeconds,
+            physicalSpawned,
+            homeWorldName,
+            homeX,
+            homeY,
+            homeZ,
+            updatedCurrentRouteStopIndex,
+            updatedRouteRunning,
+            updatedCurrentStopStartedAt,
+            updatedCurrentStopEndsAt,
+            updatedReturningHomeAfterRoute,
             createdAt,
             newUpdatedAt
         );

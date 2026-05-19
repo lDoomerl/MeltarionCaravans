@@ -63,6 +63,12 @@ public final class CaravanPhysicalEntityInteractListener implements Listener {
                 }
                 return;
             }
+            if (caravan.status() != net.meltarion.caravans.model.CaravanStatus.STOPPED) {
+                if (plugin.getConfigManager().isPhysicalStrangerMessageEnabled()) {
+                    plugin.getMessageService().send(player, "route-public-trade-only-when-stopped");
+                }
+                return;
+            }
             if (plugin.getTownyIntegrationService().isShopPlot(event.getRightClicked().getLocation())) {
                 plugin.getPublicTradeGuiService().openMainMenu(player, caravan);
                 plugin.getMessageService().send(player, "public-trade-opened", Map.of(

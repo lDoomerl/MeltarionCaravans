@@ -260,6 +260,46 @@ public final class ConfigManager {
         return Math.max(0L, config.getLong("interaction.cooldown-millis", 500L));
     }
 
+    public boolean isRouteEnabled() {
+        return config.getBoolean("route.enabled", true);
+    }
+
+    public int getRouteSetupTimeoutSeconds() {
+        return Math.max(5, config.getInt("route.setup-timeout-seconds", 60));
+    }
+
+    public int getRouteMinStopMinutes() {
+        return Math.max(1, config.getInt("route.min-stop-minutes", 1));
+    }
+
+    public int getRouteMaxStopMinutes() {
+        return Math.max(getRouteMinStopMinutes(), config.getInt("route.max-stop-minutes", 1440));
+    }
+
+    public int getRouteMaxStopsPerCaravan() {
+        return Math.max(1, config.getInt("route.max-stops-per-caravan", 10));
+    }
+
+    public boolean isRouteAllowOwnTown() {
+        return config.getBoolean("route.allow-own-town", true);
+    }
+
+    public boolean isRouteAllowAlliedTowns() {
+        return config.getBoolean("route.allow-allied-towns", true);
+    }
+
+    public boolean isRouteAllowNeutralTowns() {
+        return config.getBoolean("route.allow-neutral-towns", true);
+    }
+
+    public boolean isRouteAllowEnemyTowns() {
+        return config.getBoolean("route.allow-enemy-towns", false);
+    }
+
+    public boolean shouldRandomlySelectRouteShopPlot() {
+        return config.getBoolean("route.random-shop-plot-selection", true);
+    }
+
     public String getMessage(String path) {
         return config.getString("messages." + path, "");
     }

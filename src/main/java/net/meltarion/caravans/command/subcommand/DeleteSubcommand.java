@@ -50,6 +50,7 @@ public final class DeleteSubcommand implements CaravanSubcommand {
         }
 
         context.movement().removeRuntimeCaravan(lookupResult.caravan().id());
+        context.routes().discardCaravanState(lookupResult.caravan().id());
 
         context.messages().send(context.sender(), "deleted", Map.of(
             "id", context.caravans().getShortId(mutationResult.caravan()),

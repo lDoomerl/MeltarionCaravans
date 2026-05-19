@@ -12,6 +12,7 @@ import net.meltarion.caravans.listener.CaravanLicenseListener;
 import net.meltarion.caravans.listener.CaravanSetupListener;
 import net.meltarion.caravans.listener.TradeSetupSessionListener;
 import net.meltarion.caravans.service.CaravanEntityService;
+import net.meltarion.caravans.service.CaravanRouteService;
 import net.meltarion.caravans.service.CaravanMovementService;
 import net.meltarion.caravans.service.CaravanSetupGuiService;
 import net.meltarion.caravans.service.CaravanInventoryService;
@@ -21,10 +22,12 @@ import net.meltarion.caravans.service.MessageService;
 import net.meltarion.caravans.service.PersistentCaravanService;
 import net.meltarion.caravans.service.PublicTradeGuiService;
 import net.meltarion.caravans.service.PublicTradeService;
+import net.meltarion.caravans.service.RouteSetupSessionService;
 import net.meltarion.caravans.service.TownyIntegrationService;
 import net.meltarion.caravans.service.TradeOperationService;
 import net.meltarion.caravans.service.TradeSetupSessionService;
 import net.meltarion.caravans.storage.CaravanInventoryStorage;
+import net.meltarion.caravans.storage.CaravanRouteStorage;
 import net.meltarion.caravans.storage.CaravanStorage;
 import net.meltarion.caravans.storage.SQLiteCaravanStorage;
 import net.meltarion.caravans.storage.StorageException;
@@ -42,9 +45,11 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
     private CaravanSetupGuiService caravanSetupGuiService;
     private PublicTradeGuiService publicTradeGuiService;
     private TradeSetupSessionService tradeSetupSessionService;
+    private RouteSetupSessionService routeSetupSessionService;
     private PublicTradeService publicTradeService;
     private CaravanEntityService caravanEntityService;
     private CaravanMovementService caravanMovementService;
+    private CaravanRouteService caravanRouteService;
     private TownyIntegrationService townyIntegrationService;
     private CaravanStorage caravanStorage;
     private CaravanService caravanService;
@@ -79,6 +84,15 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
         if (caravanMovementService != null) {
             caravanMovementService.initialize();
         }
+        if (caravanRouteService != null) {
+            try {
+                caravanRouteService.initialize();
+            } catch (StorageException exception) {
+                getLogger().log(Level.SEVERE, "Failed to initialize caravan routes.", exception);
+                getServer().getPluginManager().disablePlugin(this);
+                return;
+            }
+        }
         getLogger().info("MeltarionCaravans enabled.");
     }
 
@@ -86,6 +100,9 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
     public void onDisable() {
         if (inventoryService != null) {
             inventoryService.saveAllOpenInventories();
+        }
+        if (caravanRouteService != null) {
+            caravanRouteService.shutdown();
         }
         if (caravanMovementService != null) {
             caravanMovementService.shutdown();
@@ -148,12 +165,20 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
         return publicTradeService;
     }
 
+    public RouteSetupSessionService getRouteSetupSessionService() {
+        return routeSetupSessionService;
+    }
+
     public CaravanEntityService getCaravanEntityService() {
         return caravanEntityService;
     }
 
     public CaravanMovementService getCaravanMovementService() {
         return caravanMovementService;
+    }
+
+    public CaravanRouteService getCaravanRouteService() {
+        return caravanRouteService;
     }
 
     public TownyIntegrationService getTownyIntegrationService() {
@@ -179,9 +204,8 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
         );
         persistentCaravanService.loadCaravans();
         this.caravanService = persistentCaravanService;
-        this.caravanSetupGuiService = new CaravanSetupGuiService(configManager, inventoryService, tradeOperationService);
-        this.caravanEntityService = new CaravanEntityService(this, configManager, getLogger());
         this.townyIntegrationService = new TownyIntegrationService(getServer().getPluginManager(), configManager, getLogger());
+        this.caravanEntityService = new CaravanEntityService(this, configManager, getLogger());
         this.publicTradeGuiService = new PublicTradeGuiService(configManager, inventoryService, tradeOperationService);
         this.publicTradeService = new PublicTradeService(
             configManager,
@@ -199,11 +223,37 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
             messageService,
             getLogger()
         );
+        this.caravanRouteService = new CaravanRouteService(
+            this,
+            configManager,
+            caravanService,
+            caravanMovementService,
+            townyIntegrationService,
+            messageService,
+            (CaravanRouteStorage) storage,
+            getLogger()
+        );
+        caravanMovementService.setCaravanRouteService(caravanRouteService);
+        this.caravanSetupGuiService = new CaravanSetupGuiService(
+            configManager,
+            inventoryService,
+            tradeOperationService,
+            caravanRouteService,
+            townyIntegrationService
+        );
         this.tradeSetupSessionService = new TradeSetupSessionService(
             caravanService,
             tradeOperationService,
             messageService,
             configManager::getTradeSetupTimeoutSeconds
+        );
+        this.routeSetupSessionService = new RouteSetupSessionService(
+            caravanService,
+            caravanRouteService,
+            messageService,
+            configManager::getRouteSetupTimeoutSeconds,
+            configManager::getRouteMinStopMinutes,
+            configManager::getRouteMaxStopMinutes
         );
     }
 

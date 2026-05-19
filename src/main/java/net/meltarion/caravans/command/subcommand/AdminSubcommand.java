@@ -5,6 +5,7 @@ import java.util.Map;
 import net.meltarion.caravans.command.CaravanSubcommand;
 import net.meltarion.caravans.command.CommandContext;
 import net.meltarion.caravans.model.CaravanRecord;
+import net.meltarion.caravans.model.CaravanRouteStopRecord;
 import net.meltarion.caravans.model.TradeOperationType;
 import net.meltarion.caravans.service.CaravanLookupResult;
 import net.meltarion.caravans.service.CaravanMovementResult;
@@ -52,6 +53,8 @@ public final class AdminSubcommand implements CaravanSubcommand {
             case "move" -> handleMove(context);
             case "position" -> handlePosition(context);
             case "debug" -> handleDebug(context);
+            case "routeinfo" -> handleRouteInfo(context);
+            case "routeclear" -> handleRouteClear(context);
             case "return" -> handleReturn(context);
             case "trades" -> handleTrades(context);
             case "sell" -> handleSell(context);
@@ -66,7 +69,7 @@ public final class AdminSubcommand implements CaravanSubcommand {
     @Override
     public List<String> tabComplete(CommandContext context) {
         if (context.args().length == 1) {
-            return List.of("list", "info", "open", "setup", "spawn", "despawn", "move", "position", "debug", "return", "trades", "sell", "buy", "delete", "reload", "givelicense").stream()
+            return List.of("list", "info", "open", "setup", "spawn", "despawn", "move", "position", "debug", "routeinfo", "routeclear", "return", "trades", "sell", "buy", "delete", "reload", "givelicense").stream()
                 .filter(option -> option.startsWith(context.args()[0].toLowerCase()))
                 .toList();
         }
@@ -149,6 +152,7 @@ public final class AdminSubcommand implements CaravanSubcommand {
         }
 
         context.movement().removeRuntimeCaravan(lookupResult.caravan().id());
+        context.routes().discardCaravanState(lookupResult.caravan().id());
 
         context.messages().send(context.sender(), "deleted", Map.of(
             "id", context.caravans().getShortId(mutationResult.caravan()),
@@ -362,6 +366,59 @@ public final class AdminSubcommand implements CaravanSubcommand {
             Map.entry("home_z", effective.homeZ() == null ? "?" : String.format(java.util.Locale.US, "%.1f", effective.homeZ())),
             Map.entry("active_trades", String.valueOf(activeTrades)),
             Map.entry("inventory_exists", String.valueOf(inventoryExists))
+        ));
+    }
+
+    private void handleRouteInfo(CommandContext context) {
+        if (context.args().length < 3) {
+            context.messages().send(context.sender(), "admin-routeinfo-usage");
+            return;
+        }
+
+        CaravanRecord caravan = resolveAdminCaravan(context, context.args()[2]);
+        if (caravan == null) {
+            return;
+        }
+
+        List<CaravanRouteStopRecord> stops = context.routes().getRouteStops(caravan.id());
+        if (stops.isEmpty()) {
+            context.messages().send(context.sender(), "route-no-stops");
+            return;
+        }
+
+        context.messages().sendList(context.sender(), "route-info-header", Map.of(
+            "id", context.caravans().getShortId(caravan),
+            "name", caravan.name()
+        ));
+        for (CaravanRouteStopRecord stop : stops) {
+            context.messages().send(context.sender(), "route-info-entry", Map.of(
+                "order", String.valueOf(stop.stopOrder() + 1),
+                "town", stop.townName(),
+                "duration", String.valueOf(stop.stopDurationSeconds() / 60)
+            ));
+        }
+    }
+
+    private void handleRouteClear(CommandContext context) {
+        if (context.args().length < 3) {
+            context.messages().send(context.sender(), "admin-routeclear-usage");
+            return;
+        }
+
+        CaravanRecord caravan = resolveAdminCaravan(context, context.args()[2]);
+        if (caravan == null) {
+            return;
+        }
+
+        var result = context.routes().clearRoute(caravan);
+        if (!result.success()) {
+            context.messages().send(context.sender(), "storage-error");
+            return;
+        }
+
+        context.messages().send(context.sender(), "route-cleared", Map.of(
+            "id", context.caravans().getShortId(caravan),
+            "name", caravan.name()
         ));
     }
 
