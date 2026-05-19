@@ -8,6 +8,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.meltarion.caravans.config.ConfigManager;
+import net.meltarion.caravans.config.GuiConfigManager;
 import net.meltarion.caravans.inventory.CaravanInventoryHolder;
 import net.meltarion.caravans.model.CaravanRecord;
 import net.meltarion.caravans.storage.CaravanInventoryStorage;
@@ -23,12 +24,14 @@ public final class CaravanInventoryService {
     private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.legacyAmpersand();
 
     private final ConfigManager configManager;
+    private final GuiConfigManager guiConfigManager;
     private final CaravanInventoryStorage storage;
     private final Logger logger;
     private final Map<UUID, Inventory> openInventories = new ConcurrentHashMap<>();
 
-    public CaravanInventoryService(ConfigManager configManager, CaravanInventoryStorage storage, Logger logger) {
+    public CaravanInventoryService(ConfigManager configManager, GuiConfigManager guiConfigManager, CaravanInventoryStorage storage, Logger logger) {
         this.configManager = configManager;
+        this.guiConfigManager = guiConfigManager;
         this.storage = storage;
         this.logger = logger;
     }
@@ -136,7 +139,7 @@ public final class CaravanInventoryService {
             holder,
             configManager.getCaravanInventorySize(),
             LEGACY_SERIALIZER.deserialize(
-                configManager.getCaravanInventoryTitle()
+                guiConfigManager.getString("storage.title", "&6Caravan: &e%name%")
                     .replace("%name%", caravan.name())
                     .replace("%id%", caravan.id().toString().substring(0, 8))
             )

@@ -6,9 +6,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import net.meltarion.caravans.MeltarionCaravansPlugin;
 import net.meltarion.caravans.model.CaravanRecord;
 import net.meltarion.caravans.model.CaravanStatus;
-import net.meltarion.caravans.service.CaravanMutationResult;
 import org.bukkit.Bukkit;
 import org.bukkit.command.CommandSender;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -34,7 +34,7 @@ public final class CaravanPhysicalEntityDamageListener implements Listener {
             return;
         }
 
-        CaravanRecord caravan = plugin.getCaravanService().getCaravan(caravanId);
+        CaravanRecord caravan = plugin.getCaravanMovementService().getRuntimeCaravan(caravanId);
         if (caravan == null) {
             return;
         }
@@ -42,29 +42,13 @@ public final class CaravanPhysicalEntityDamageListener implements Listener {
         int damage = Math.max(1, (int) Math.ceil(event.getFinalDamage()));
         CaravanRecord updatedCaravan = caravan;
         if (plugin.getConfigManager().shouldSyncPhysicalDamageToCaravanHp()) {
-            int updatedHp = Math.max(0, caravan.hp() - damage);
-            CaravanMutationResult mutationResult = plugin.getCaravanService().updateCaravanHealthAndStatus(
-                caravan,
-                updatedHp,
-                CaravanStatus.ATTACKED
-            );
-            if (!mutationResult.success()) {
-                plugin.getLogger().warning("Failed to persist caravan damage state for " + caravan.id() + '.');
-                return;
-            }
-            updatedCaravan = mutationResult.caravan();
+            updatedCaravan = plugin.getCaravanHealthService().applyDamage(caravan, event.getFinalDamage(), CaravanStatus.ATTACKED);
         } else if (plugin.getConfigManager().shouldPauseMovementWhenAttacked()) {
-            CaravanMutationResult mutationResult = plugin.getCaravanService().updateCaravanHealthAndStatus(
-                caravan,
-                caravan.hp(),
-                CaravanStatus.ATTACKED
-            );
-            if (!mutationResult.success()) {
-                plugin.getLogger().warning("Failed to persist caravan attacked status for " + caravan.id() + '.');
-                return;
-            }
-            updatedCaravan = mutationResult.caravan();
+            updatedCaravan = plugin.getCaravanHealthService().markStatus(caravan, CaravanStatus.ATTACKED);
         }
+        plugin.getCaravanMovementService().syncRuntimeCaravan(updatedCaravan);
+
+        preventVisualDeath(event, updatedCaravan);
 
         if (plugin.getConfigManager().shouldPauseMovementWhenAttacked()) {
             updatedCaravan = plugin.getCaravanMovementService().handleAttacked(updatedCaravan);
@@ -81,6 +65,16 @@ public final class CaravanPhysicalEntityDamageListener implements Listener {
             if (owner != null && owner.isOnline()) {
                 plugin.getMessageService().send(owner, "physical-destroyed", placeholders(updatedCaravan, damage));
             }
+        }
+    }
+
+    private void preventVisualDeath(EntityDamageEvent event, CaravanRecord caravan) {
+        if (caravan.hp() <= 0 || !(event.getEntity() instanceof LivingEntity livingEntity)) {
+            return;
+        }
+
+        if (livingEntity.getHealth() - event.getFinalDamage() <= 0.0D) {
+            event.setDamage(Math.max(0.0D, livingEntity.getHealth() - 1.0D));
         }
     }
 

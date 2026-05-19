@@ -104,6 +104,12 @@ public final class CaravanMovementService {
         return runtime == null ? caravanService.getCaravan(caravanId) : runtime;
     }
 
+    public void syncRuntimeCaravan(CaravanRecord caravan) {
+        if (caravan != null) {
+            runtimeCaravans.put(caravan.id(), caravan);
+        }
+    }
+
     public CaravanMovementResult setManualPosition(CaravanRecord caravan, Location location, boolean assignHomeIfMissing, boolean markPhysicalSpawned) {
         World world = location.getWorld();
         if (world == null) {

@@ -31,6 +31,7 @@ import org.bukkit.util.Vector;
 public final class CaravanEntityService {
 
     private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.legacyAmpersand();
+    private static final double VISUAL_ENTITY_MAX_HEALTH = 20.0D;
 
     private final Plugin plugin;
     private final ConfigManager configManager;
@@ -214,7 +215,7 @@ public final class CaravanEntityService {
     }
 
     private void configureTrader(WanderingTrader trader, CaravanRecord caravan) {
-        configureLivingEntity(trader, caravan, CaravanEntityRole.TRADER, configManager.getPhysicalTraderNameFormat(), configManager.getPhysicalTraderHealth());
+        configureLivingEntity(trader, caravan, CaravanEntityRole.TRADER, configManager.getPhysicalTraderNameFormat());
         trader.setRecipes(java.util.List.of());
         trader.setCanDrinkMilk(false);
         trader.setCanDrinkPotion(false);
@@ -222,11 +223,22 @@ public final class CaravanEntityService {
     }
 
     private void configureLlama(TraderLlama llama, CaravanRecord caravan, CaravanEntityRole role, String nameFormat) {
-        configureLivingEntity(llama, caravan, role, nameFormat, configManager.getPhysicalLlamaHealth());
+        configureLivingEntity(llama, caravan, role, nameFormat);
         llama.setStrength(1);
     }
 
-    private void configureLivingEntity(LivingEntity entity, CaravanRecord caravan, CaravanEntityRole role, String nameFormat, double maxHealth) {
+    public synchronized void syncVisualHealth(CaravanRecord caravan) {
+        SpawnedCaravanEntities entities = spawnedCaravans.get(caravan.id());
+        if (entities == null) {
+            return;
+        }
+
+        syncVisualHealth(entities.traderId(), caravan);
+        syncVisualHealth(entities.llamaOneId(), caravan);
+        syncVisualHealth(entities.llamaTwoId(), caravan);
+    }
+
+    private void configureLivingEntity(LivingEntity entity, CaravanRecord caravan, CaravanEntityRole role, String nameFormat) {
         entity.setPersistent(true);
         entity.setRemoveWhenFarAway(false);
         entity.setAI(true);
@@ -241,13 +253,35 @@ public final class CaravanEntityService {
         entity.getActivePotionEffects().forEach(effect -> entity.removePotionEffect(effect.getType()));
 
         if (entity.getAttribute(Attribute.MAX_HEALTH) != null) {
-            entity.getAttribute(Attribute.MAX_HEALTH).setBaseValue(maxHealth);
+            entity.getAttribute(Attribute.MAX_HEALTH).setBaseValue(VISUAL_ENTITY_MAX_HEALTH);
         }
-        entity.setHealth(Math.min(maxHealth, entity.getAttribute(Attribute.MAX_HEALTH) == null ? maxHealth : entity.getAttribute(Attribute.MAX_HEALTH).getValue()));
+        syncVisualHealth(entity, caravan);
 
         PersistentDataContainer pdc = entity.getPersistentDataContainer();
         pdc.set(caravanIdKey, PersistentDataType.STRING, caravan.id().toString());
         pdc.set(caravanEntityRoleKey, PersistentDataType.STRING, role.name());
+    }
+
+    private void syncVisualHealth(UUID entityId, CaravanRecord caravan) {
+        Entity entity = Bukkit.getEntity(entityId);
+        if (entity instanceof LivingEntity livingEntity) {
+            syncVisualHealth(livingEntity, caravan);
+        }
+    }
+
+    private void syncVisualHealth(LivingEntity entity, CaravanRecord caravan) {
+        if (caravan.maxHp() <= 0) {
+            return;
+        }
+
+        double maxHealth = entity.getAttribute(Attribute.MAX_HEALTH) == null
+            ? VISUAL_ENTITY_MAX_HEALTH
+            : entity.getAttribute(Attribute.MAX_HEALTH).getValue();
+        double ratio = Math.max(0.0D, Math.min(1.0D, caravan.hp() / (double) caravan.maxHp()));
+        double targetHealth = caravan.hp() > 0
+            ? Math.max(1.0D, maxHealth * ratio)
+            : 1.0D;
+        entity.setHealth(Math.min(maxHealth, targetHealth));
     }
 
     private void cleanupInvalidState(UUID caravanId) {

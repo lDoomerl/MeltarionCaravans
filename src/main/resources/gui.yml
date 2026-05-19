@@ -1,0 +1,193 @@
+gui:
+  storage:
+    title: "&6Caravan: &e%name%"
+  setup:
+    title: "&8Caravan Setup"
+    buttons:
+      storage:
+        material: CHEST
+        name: "&6Storage"
+        lore:
+          - "&7Open caravan storage."
+      sell-items:
+        material: EMERALD
+        name: "&aSell Items"
+        lore:
+          - "&7Select caravan items to sell."
+      buy-orders:
+        material: WRITABLE_BOOK
+        name: "&bBuy Orders"
+        lore:
+          - "&7Create caravan buy orders."
+      existing-trades:
+        material: BOOK
+        name: "&eExisting Trades"
+        lore:
+          - "&7Manage active trade operations."
+      info:
+        material: COMPASS
+        name: "&dInfo"
+        lore:
+          - "&7View caravan details."
+      route:
+        material: MAP
+        name: "&9Route"
+        lore:
+          - "&7Configure caravan route stops."
+      close:
+        material: BARRIER
+        name: "&cClose"
+        lore:
+          - "&7Close this menu."
+  sell-setup:
+    title: "&8Sell Setup: &6%name%"
+  buy-catalog:
+    categories:
+      title: "&8Buy Categories"
+      empty:
+        name: "&cCatalog Empty"
+        lore:
+          - "&7No buy catalog entries are available."
+      button:
+        name: "&6%category%"
+        lore:
+          - "&7Open materials in this category."
+    materials:
+      title: "&8Buy: &6%category%"
+      empty:
+        name: "&cEmpty Category"
+        lore:
+          - "&7No materials are available in this category."
+      button:
+        name: "&f%material%"
+        lore:
+          - "&7Click to create a buy order."
+    shared:
+      back:
+        name: "&eBack"
+        lore:
+          - "&7Return to categories."
+      previous:
+        name: "&ePrevious"
+        lore:
+          - "&7Go to previous page."
+      next:
+        name: "&eNext"
+        lore:
+          - "&7Go to next page."
+      close:
+        name: "&cClose"
+        lore:
+          - "&7Close this menu."
+  public-trade:
+    main:
+      title: "&8Caravan Trade"
+      buttons:
+        buy-from-caravan:
+          material: EMERALD
+          name: "&aBuy From Caravan"
+          lore:
+            - "&7Browse active SELL offers."
+        sell-to-caravan:
+          material: CHEST
+          name: "&6Sell To Caravan"
+          lore:
+            - "&7Browse active BUY orders."
+        info:
+          material: COMPASS
+          name: "&dInfo"
+          lore:
+            - "&7View caravan details."
+        close:
+          material: BARRIER
+          name: "&cClose"
+          lore:
+            - "&7Close this menu."
+    sell-offers:
+      title: "&8Buy From Caravan"
+    buy-orders:
+      title: "&8Sell To Caravan"
+    shared:
+      back:
+        name: "&eBack"
+        lore:
+          - "&7Return to public trade menu."
+      close:
+        name: "&cClose"
+        lore:
+          - "&7Close this menu."
+  trade-management:
+    title: "&8Caravan Trades: &6%name%"
+  route:
+    title: "&8Route Setup"
+    buttons:
+      back:
+        name: "&eBack"
+        lore:
+          - "&7Return to caravan setup."
+      add-stop:
+        name: "&aAdd Route Stop"
+        lore:
+          - "&7Choose a Towny town and stop time."
+      loop:
+        enabled-name: "&aLoop Route: ON"
+        disabled-name: "&cLoop Route: OFF"
+        lore:
+          - "&7Loop allowed: &f%allowed%"
+          - "&7Estimated route duration: &f%duration% min"
+          - "&eClick to toggle."
+      start:
+        name: "&aStart Route"
+        lore:
+          - "&7Begin running this caravan route."
+      stop:
+        name: "&cStop Route"
+        lore:
+          - "&7Stop the running route."
+      clear:
+        name: "&cClear Route"
+        lore:
+          - "&7Remove all configured route stops."
+      previous:
+        name: "&ePrevious"
+        lore:
+          - "&7Go to previous page."
+      next:
+        name: "&eNext"
+        lore:
+          - "&7Go to next page."
+      close:
+        name: "&cClose"
+        lore:
+          - "&7Close this menu."
+    town-select:
+      title: "&8Route Towns"
+      back:
+        name: "&eBack"
+        lore:
+          - "&7Return to route setup."
+      previous:
+        name: "&ePrevious"
+        lore:
+          - "&7Go to previous page."
+      next:
+        name: "&eNext"
+        lore:
+          - "&7Go to next page."
+      close:
+        name: "&cClose"
+        lore:
+          - "&7Close this menu."
+  info:
+    title: "&8Caravan Info"
+    main:
+      name: "&6%name%"
+      lore:
+        - "&7ID: &f%id%"
+        - "&7Owner: &f%player%"
+        - "&7Status: &f%status%"
+        - "&7HP: &f%hp%&7/&f%max_hp%"
+    close:
+      name: "&cClose"
+      lore:
+        - "&7Close this menu."

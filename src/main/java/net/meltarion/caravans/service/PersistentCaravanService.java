@@ -173,6 +173,12 @@ public final class PersistentCaravanService implements CaravanService {
     }
 
     @Override
+    public synchronized CaravanMutationResult updateCachedCaravanRecord(CaravanRecord caravan) {
+        replaceCachedCaravan(caravan);
+        return CaravanMutationResult.success(caravan);
+    }
+
+    @Override
     public synchronized CaravanMutationResult updateCaravanRecord(CaravanRecord caravan) {
         try {
             storage.updateCaravan(caravan);
@@ -255,7 +261,7 @@ public final class PersistentCaravanService implements CaravanService {
         }
 
         Instant now = Instant.now();
-        int maxHp = configManager.getCaravanMaxHp();
+        int maxHp = configManager.getCaravanHealth();
         CaravanRecord caravanRecord = new CaravanRecord(
             UUID.randomUUID(),
             ownerId,

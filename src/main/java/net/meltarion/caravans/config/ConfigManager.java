@@ -19,6 +19,7 @@ public final class ConfigManager {
 
     private FileConfiguration config;
     private int validatedInventorySize;
+    private boolean warnedAboutLegacyEntityHealth;
 
     public ConfigManager(JavaPlugin plugin) {
         this.plugin = plugin;
@@ -59,20 +60,23 @@ public final class ConfigManager {
         return Collections.unmodifiableMap(limits);
     }
 
-    public int getCaravanMaxHp() {
+    public int getCaravanHealth() {
+        if (config.contains("caravan.health")) {
+            return Math.max(1, config.getInt("caravan.health", 5000));
+        }
         return Math.max(1, config.getInt("caravan.max-hp", 5000));
     }
 
-    public boolean isVirtualMovementEnabled() {
-        return config.getBoolean("caravan.virtual-movement-enabled", true);
+    public double getCaravanDamageMultiplier() {
+        return Math.max(0.0D, config.getDouble("caravan.damage-multiplier", 1.0D));
+    }
+
+    public long getCaravanVisualHealthSyncIntervalTicks() {
+        return Math.max(1L, config.getLong("caravan.visual-health-sync-interval-ticks", 20L));
     }
 
     public int getCaravanInventorySize() {
         return validatedInventorySize;
-    }
-
-    public String getCaravanInventoryTitle() {
-        return config.getString("caravan.inventory-title", "&6Caravan: &e%name%");
     }
 
     public int getMaxCaravanNameLength() {
@@ -156,14 +160,6 @@ public final class ConfigManager {
         return Math.max(0, config.getInt("physical-caravan.spawn-radius", 3));
     }
 
-    public double getPhysicalTraderHealth() {
-        return Math.max(1.0D, config.getDouble("physical-caravan.entity-health.trader", 100.0D));
-    }
-
-    public double getPhysicalLlamaHealth() {
-        return Math.max(1.0D, config.getDouble("physical-caravan.entity-health.llama", 100.0D));
-    }
-
     public String getPhysicalTraderNameFormat() {
         return config.getString("physical-caravan.names.trader", "&6Caravan %player%");
     }
@@ -237,7 +233,7 @@ public final class ConfigManager {
     }
 
     public boolean isMovementDebugEnabled() {
-        return config.getBoolean("movement.debug", false);
+        return config.getBoolean("debug.enabled", config.getBoolean("movement.debug", false));
     }
 
     public int getMovementAttackedNotificationCooldownSeconds() {
@@ -370,12 +366,20 @@ public final class ConfigManager {
         return config.getBoolean("dynmap.show-eta", true);
     }
 
-    public String getMessage(String path) {
+    public String getLegacyMessage(String path) {
         return config.getString("messages." + path, "");
     }
 
-    public List<String> getMessageList(String path) {
+    public java.util.List<String> getLegacyMessageList(String path) {
         return config.getStringList("messages." + path);
+    }
+
+    public void logLegacyWarnings() {
+        if (!warnedAboutLegacyEntityHealth
+            && (config.contains("physical-caravan.entity-health.trader") || config.contains("physical-caravan.entity-health.llama"))) {
+            warnedAboutLegacyEntityHealth = true;
+            plugin.getLogger().warning("Legacy physical-caravan.entity-health.* keys are ignored. caravan.health is now the real caravan HP source.");
+        }
     }
 
     private int resolveInventorySize() {

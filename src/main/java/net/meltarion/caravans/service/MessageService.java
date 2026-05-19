@@ -3,6 +3,7 @@ package net.meltarion.caravans.service;
 import java.util.List;
 import java.util.Map;
 import net.meltarion.caravans.config.ConfigManager;
+import net.meltarion.caravans.config.LangManager;
 import org.bukkit.command.CommandSender;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
@@ -11,9 +12,11 @@ public final class MessageService {
     private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.legacyAmpersand();
 
     private final ConfigManager configManager;
+    private final LangManager langManager;
 
-    public MessageService(ConfigManager configManager) {
+    public MessageService(ConfigManager configManager, LangManager langManager) {
         this.configManager = configManager;
+        this.langManager = langManager;
     }
 
     public void send(CommandSender sender, String path) {
@@ -21,7 +24,11 @@ public final class MessageService {
     }
 
     public void send(CommandSender sender, String path, Map<String, String> placeholders) {
-        String message = applyPlaceholders(configManager.getMessage(path), placeholders);
+        String raw = langManager.getMessage(path);
+        if (raw.isEmpty()) {
+            raw = configManager.getLegacyMessage(path);
+        }
+        String message = applyPlaceholders(raw, placeholders);
         if (!message.isEmpty()) {
             sender.sendMessage(LEGACY_SERIALIZER.deserialize(message));
         }
@@ -32,7 +39,10 @@ public final class MessageService {
     }
 
     public void sendList(CommandSender sender, String path, Map<String, String> placeholders) {
-        List<String> lines = configManager.getMessageList(path);
+        List<String> lines = langManager.getMessageList(path);
+        if (lines.isEmpty()) {
+            lines = configManager.getLegacyMessageList(path);
+        }
         for (String line : lines) {
             sender.sendMessage(LEGACY_SERIALIZER.deserialize(applyPlaceholders(line, placeholders)));
         }

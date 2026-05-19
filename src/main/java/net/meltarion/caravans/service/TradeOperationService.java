@@ -12,6 +12,7 @@ import java.util.logging.Logger;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 import net.meltarion.caravans.config.ConfigManager;
+import net.meltarion.caravans.config.GuiConfigManager;
 import net.meltarion.caravans.inventory.CaravanTradeManagementHolder;
 import net.meltarion.caravans.model.CaravanRecord;
 import net.meltarion.caravans.model.TradeOperationRecord;
@@ -30,6 +31,7 @@ public final class TradeOperationService {
     private static final LegacyComponentSerializer LEGACY_SERIALIZER = LegacyComponentSerializer.legacyAmpersand();
 
     private final ConfigManager configManager;
+    private final GuiConfigManager guiConfigManager;
     private final CaravanInventoryService caravanInventoryService;
     private final TradeOperationStorage storage;
     private final Logger logger;
@@ -37,11 +39,13 @@ public final class TradeOperationService {
 
     public TradeOperationService(
         ConfigManager configManager,
+        GuiConfigManager guiConfigManager,
         CaravanInventoryService caravanInventoryService,
         TradeOperationStorage storage,
         Logger logger
     ) {
         this.configManager = configManager;
+        this.guiConfigManager = guiConfigManager;
         this.caravanInventoryService = caravanInventoryService;
         this.storage = storage;
         this.logger = logger;
@@ -182,7 +186,7 @@ public final class TradeOperationService {
         Inventory inventory = Bukkit.createInventory(
             holder,
             54,
-            LEGACY_SERIALIZER.deserialize("&8Caravan Trades: &6" + caravan.name())
+            LEGACY_SERIALIZER.deserialize(guiConfigManager.getString("trade-management.title", "&8Caravan Trades: &6%name%").replace("%name%", caravan.name()))
         );
         holder.setInventory(inventory);
         populateTradeManagementInventory(inventory, caravan.id());

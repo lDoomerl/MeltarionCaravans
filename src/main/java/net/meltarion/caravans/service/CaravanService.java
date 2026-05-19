@@ -27,6 +27,8 @@ public interface CaravanService {
 
     CaravanMutationResult deleteCaravan(CaravanRecord caravan);
 
+    CaravanMutationResult updateCachedCaravanRecord(CaravanRecord caravan);
+
     CaravanMutationResult updateCaravanRecord(CaravanRecord caravan);
 
     CaravanMutationResult updateCaravanHealthAndStatus(CaravanRecord caravan, int hp, net.meltarion.caravans.model.CaravanStatus status);
