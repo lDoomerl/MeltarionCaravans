@@ -1,34 +1,71 @@
+# Основной предмет-валюта для торговли караванов.
 currency-item: GOLD_INGOT
 
+# Базовый лимит караванов для игрока без специальных прав.
 default-caravan-limit: 1
 
+# Лимиты по permission-узлам.
+# Если у игрока несколько прав, используется наибольшее значение.
 permission-limits:
   meltarion.caravans.limit.2: 2
   meltarion.caravans.limit.3: 3
 
 caravan:
+  # Максимальная длина имени каравана.
   max-name-length: 24
+
+  # Размер инвентаря каравана.
+  # Допустимые значения: 9, 18, 27, 36, 45, 54.
   inventory-size: 27
+
+  # Базовое здоровье новых караванов.
+  # Это основной источник HP по умолчанию.
   health: 5000
+
+  # Множитель входящего урона по каравану.
   damage-multiplier: 1.0
+
+  # Как часто визуально синхронизировать здоровье проекции сущностей.
   visual-health-sync-interval-ticks: 20
 
 caravan-license:
+  # Включает обязательную лицензию для создания каравана.
   enabled: true
+
+  # Материал предмета лицензии.
   material: PAPER
+
+  # CustomModelData для ресурс-пака, если используется.
   custom-model-data: 10001
-  display-name: "&6Caravan License"
+
+  # Отображаемое имя лицензии.
+  display-name: "&6Лицензия на караван"
+
+  # Описание предмета лицензии.
   lore:
-    - "&7Required to create one caravan."
+    - "&7Требуется для создания одного каравана."
+
+  # Проверять ли имя предмета при распознавании лицензии.
   require-display-name: true
+
+  # Проверять ли lore при распознавании лицензии.
   require-lore: false
+
+  # Проверять ли CustomModelData при распознавании лицензии.
   require-custom-model-data: true
+
+  # Расходовать ли лицензию после успешного создания каравана.
   consume-on-create: true
+
+  # Разрешать ли создание каравана правым кликом по лицензии.
   allow-right-click-create: true
 
 trade:
+  # Таймаут чат-настройки торговых операций, в секундах.
   setup-timeout-seconds: 60
+
   buy-catalog:
+    # Материалы, запрещённые в каталоге заявок на покупку.
     blacklist:
       - BEDROCK
       - BARRIER
@@ -45,73 +82,169 @@ trade:
       - COMMAND_BLOCK_MINECART
 
 movement:
+  # Включает виртуальное перемещение караванов.
   enabled: true
+
+  # Интервал обновления перемещения, в секундах.
   tick-interval-seconds: 2
+
+  # Интервал периодического сохранения движения в БД, в секундах.
   database-save-interval-seconds: 30
+
+  # Скорость перемещения по умолчанию, блоков в секунду.
   default-speed-blocks-per-second: 1.5
+
+  # Радиус появления физической проекции рядом с игроками.
   physical-projection-radius: 96
+
+  # Радиус исчезновения физической проекции при удалении игроков.
   physical-despawn-radius: 128
+
+  # Дистанция, на которой цель считается достигнутой.
   arrival-distance: 3
+
+  # Подстраивать ли Y к высоте поверхности, если чанк уже загружен.
   adjust-y-to-highest-block: true
+
+  # Максимальная коррекция Y за одно обновление.
   max-y-adjust-per-update: 8
+
+  # Ставить ли караван на паузу при атаке.
   pause-when-attacked: true
+
+  # Кулдаун уведомлений об атаке владельцу, в секундах.
   attacked-notification-cooldown-seconds: 30
+
+  # Автоматически возобновлять маршрут после атаки.
   auto-resume-after-attack: true
+
+  # Задержка перед авто-возобновлением после атаки, в секундах.
   auto-resume-delay-seconds: 120
 
 projection:
+  # Минимальная задержка между повторными спавнами проекции, в секундах.
   spawn-cooldown-seconds: 5
+
+  # Минимальная задержка между повторными despawn проекции, в секундах.
   despawn-cooldown-seconds: 5
+
+  # Дистанция, на которой проекция пытается плавно следовать к позиции.
   smooth-follow-distance: 8
+
+  # Дистанция, после которой разрешена телепортационная коррекция.
   teleport-correction-distance: 24
+
+  # Интервал синхронизации движения проекции, в тиках.
   movement-sync-interval-ticks: 20
 
 interaction:
+  # Кулдаун взаимодействия с караваном, в миллисекундах.
   cooldown-millis: 500
 
 route:
+  # Включает систему маршрутов.
   enabled: true
+
+  # Таймаут настройки остановки маршрута через чат, в секундах.
   setup-timeout-seconds: 60
+
+  # Минимальная длительность остановки, в минутах.
   min-stop-minutes: 1
+
+  # Максимальная длительность остановки, в минутах.
   max-stop-minutes: 1440
+
+  # Максимум остановок на один караван.
   max-stops-per-caravan: 10
+
+  # Разрешать ли выбирать свой город как точку маршрута.
   allow-own-town: true
+
+  # Разрешать ли союзные города.
   allow-allied-towns: true
+
+  # Разрешать ли нейтральные города.
   allow-neutral-towns: true
+
+  # Разрешать ли вражеские города.
   allow-enemy-towns: false
+
+  # Случайно выбирать Shop Plot в выбранном городе.
   random-shop-plot-selection: true
+
+  # Разрешать ли циклические маршруты.
   allow-loop-routes: true
+
   stop-effects:
+    # Показывать ли эффекты при прибытии на остановку.
     enabled: true
+
+    # Частица при остановке.
     particle: CAMPFIRE_COSY_SMOKE
+
+    # Звук при остановке.
     sound: ENTITY_WANDERING_TRADER_YES
 
 notifications:
+  # Сохранять ли уведомления в памяти, если владелец офлайн.
   queue-offline-notifications: true
+
+  # Максимум отложенных уведомлений на игрока.
   max-queued-per-player: 20
 
 dynmap:
+  # Включает интеграцию с Dynmap, если он установлен.
   enabled: true
+
+  # Интервал обновления маркеров, в секундах.
   update-interval-seconds: 10
+
+  # ID набора маркеров в Dynmap.
   marker-set-id: meltarion_caravans
+
+  # Показывать ли ETA в подписи маркера.
   show-eta: true
 
 physical-caravan:
+  # Включает физическую проекцию каравана.
   enabled: true
+
+  # Удалять ли проекции при выключении или перезагрузке плагина.
   despawn-on-plugin-disable: true
+
+  # Удалять ли осиротевшие сущности караванов при включении плагина.
   cleanup-orphaned-entities-on-enable: true
+
+  # Блокировать ли повторный спавн одного и того же каравана.
   prevent-duplicate-spawn: true
+
+  # Радиус разлёта сущностей при первичном спавне.
   spawn-radius: 3
+
   names:
-    trader: "&6Caravan %player%"
-    llama-1: "&eCaravan Llama"
-    llama-2: "&eCaravan Llama"
+    # Имя торговца каравана.
+    trader: "&6Караван %player%"
+
+    # Имя первой ламы.
+    llama-1: "&eЛама каравана"
+
+    # Имя второй ламы.
+    llama-2: "&eЛама каравана"
+
   interaction:
+    # Открывать ли меню настройки владельцу/админу по правому клику.
     owner-opens-setup: true
+
+    # Показывать ли сообщение посторонним игрокам при запрете взаимодействия.
     stranger-message-enabled: true
+
   damage:
+    # Включает обработку урона по проекции каравана.
     enabled: true
+
+    # Переносить ли урон сущностей в системное HP каравана.
     sync-damage-to-caravan-hp: true
 
 debug:
+  # Включает дополнительные диагностические сообщения.
   enabled: false

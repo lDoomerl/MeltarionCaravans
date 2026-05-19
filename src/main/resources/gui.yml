@@ -1,237 +1,237 @@
 gui:
   storage:
-    title: "&6Caravan: &e%name%"
+    title: "&6Караван: &e%name%"
   setup:
-    title: "&8Caravan Setup"
+    title: "&8Настройка каравана"
     buttons:
       storage:
         material: CHEST
-        name: "&6Storage"
+        name: "&6Склад"
         lore:
-          - "&7Open caravan storage."
+          - "&7Открыть инвентарь каравана."
       sell-items:
         material: EMERALD
-        name: "&aSell Items"
+        name: "&aПродажа товаров"
         lore:
-          - "&7Select caravan items to sell."
+          - "&7Выбрать предметы каравана для продажи."
       buy-orders:
         material: WRITABLE_BOOK
-        name: "&bBuy Orders"
+        name: "&bЗаявки на покупку"
         lore:
-          - "&7Create caravan buy orders."
+          - "&7Создать заявки каравана на покупку."
       existing-trades:
         material: BOOK
-        name: "&eExisting Trades"
+        name: "&eТекущие сделки"
         lore:
-          - "&7Manage active trade operations."
+          - "&7Управление активными торговыми операциями."
       info:
         material: COMPASS
-        name: "&dInfo"
+        name: "&dИнформация"
         lore:
-          - "&7View caravan details."
+          - "&7Посмотреть данные каравана."
       route:
         material: MAP
-        name: "&9Route"
+        name: "&9Маршрут"
         lore:
-          - "&7Configure caravan route stops."
+          - "&7Настроить остановки маршрута каравана."
       close:
         material: BARRIER
-        name: "&cClose"
+        name: "&cЗакрыть"
         lore:
-          - "&7Close this menu."
+          - "&7Закрыть это меню."
   sell-setup:
-    title: "&8Sell Setup: &6%name%"
+    title: "&8Настройка продажи: &6%name%"
   buy-catalog:
     categories:
-      title: "&8Buy Categories"
+      title: "&8Категории покупки"
       empty:
-        name: "&cCatalog Empty"
+        name: "&cКаталог пуст"
         lore:
-          - "&7No buy catalog entries are available."
+          - "&7Сейчас нет доступных записей для каталога покупки."
       button:
         name: "&6%category%"
         lore:
-          - "&7Open materials in this category."
+          - "&7Открыть материалы этой категории."
     materials:
-      title: "&8Buy: &6%category%"
+      title: "&8Покупка: &6%category%"
       empty:
-        name: "&cEmpty Category"
+        name: "&cПустая категория"
         lore:
-          - "&7No materials are available in this category."
+          - "&7В этой категории нет доступных материалов."
       button:
         name: "&f%material%"
         lore:
-          - "&7Click to create a buy order."
+          - "&7Нажмите, чтобы создать заявку на покупку."
     shared:
       back:
-        name: "&eBack"
+        name: "&eНазад"
         lore:
-          - "&7Return to categories."
+          - "&7Вернуться к категориям."
       previous:
-        name: "&ePrevious"
+        name: "&eПредыдущая"
         lore:
-          - "&7Go to previous page."
+          - "&7Перейти на предыдущую страницу."
       next:
-        name: "&eNext"
+        name: "&eСледующая"
         lore:
-          - "&7Go to next page."
+          - "&7Перейти на следующую страницу."
       close:
-        name: "&cClose"
+        name: "&cЗакрыть"
         lore:
-          - "&7Close this menu."
+          - "&7Закрыть это меню."
   public-trade:
     main:
-      title: "&8Caravan Trade"
+      title: "&8Торговля с караваном"
       buttons:
         buy-from-caravan:
           material: EMERALD
-          name: "&aBuy From Caravan"
+          name: "&aКупить у каравана"
           lore:
-            - "&7Browse active SELL offers."
+            - "&7Посмотреть активные SELL-предложения."
         sell-to-caravan:
           material: CHEST
-          name: "&6Sell To Caravan"
+          name: "&6Продать каравану"
           lore:
-            - "&7Browse active BUY orders."
+            - "&7Посмотреть активные BUY-заявки."
         info:
           material: COMPASS
-          name: "&dInfo"
+          name: "&dИнформация"
           lore:
-            - "&7View caravan details."
+            - "&7Посмотреть данные каравана."
         close:
           material: BARRIER
-          name: "&cClose"
+          name: "&cЗакрыть"
           lore:
-            - "&7Close this menu."
+            - "&7Закрыть это меню."
     sell-offers:
-      title: "&8Buy From Caravan"
+      title: "&8Покупка у каравана"
       offer:
         lore:
-          - "&7Type: &fSELL"
-          - "&7Amount: &f%amount%"
-          - "&7Price: &f%price% %currency%"
-          - "&7Remaining stock: &f%remaining%"
-          - "&7Active: &f%active%"
-          - "&eClick to purchase."
+          - "&7Тип: &fSELL"
+          - "&7Количество: &f%amount%"
+          - "&7Цена: &f%price% %currency%"
+          - "&7Остаток товара: &f%remaining%"
+          - "&7Активна: &f%active%"
+          - "&eНажмите, чтобы купить."
     buy-orders:
-      title: "&8Sell To Caravan"
+      title: "&8Продажа каравану"
       offer:
         lore:
-          - "&7Type: &fBUY"
-          - "&7Amount per sale: &f%amount%"
-          - "&7Price: &f%price% %currency%"
-          - "&7Remaining wanted: &f%remaining%"
-          - "&7Active: &f%active%"
-          - "&eClick to sell items."
+          - "&7Тип: &fBUY"
+          - "&7Количество за сделку: &f%amount%"
+          - "&7Цена: &f%price% %currency%"
+          - "&7Осталось купить: &f%remaining%"
+          - "&7Активна: &f%active%"
+          - "&eНажмите, чтобы продать."
     shared:
       back:
-        name: "&eBack"
+        name: "&eНазад"
         lore:
-          - "&7Return to public trade menu."
+          - "&7Вернуться в меню торговли."
       close:
-        name: "&cClose"
+        name: "&cЗакрыть"
         lore:
-          - "&7Close this menu."
+          - "&7Закрыть это меню."
   trade-management:
-    title: "&8Caravan Trades: &6%name%"
+    title: "&8Сделки каравана: &6%name%"
     operation:
-      type: "&7Type: &f%type%"
+      type: "&7Тип: &f%type%"
       sell-lore:
-        - "&7Amount: &f%amount%"
-        - "&7Price: &f%price% %currency%"
-        - "&7Slot: &f%slot%"
-        - "&7Active: &f%active%"
+        - "&7Количество: &f%amount%"
+        - "&7Цена: &f%price% %currency%"
+        - "&7Слот: &f%slot%"
+        - "&7Активна: &f%active%"
       buy-lore:
-        - "&7Amount per transaction: &f%amount%"
-        - "&7Price: &f%price% %currency%"
-        - "&7Max total: &f%max_total%"
-        - "&7Fulfilled: &f%fulfilled%"
-        - "&7Active: &f%active%"
+        - "&7Количество за сделку: &f%amount%"
+        - "&7Цена: &f%price% %currency%"
+        - "&7Максимум всего: &f%max_total%"
+        - "&7Выполнено: &f%fulfilled%"
+        - "&7Активна: &f%active%"
   route:
-    title: "&8Route Setup"
+    title: "&8Настройка маршрута"
     stop-item:
-      name: "%color%Stop #%order% &7- &f%town%"
+      name: "%color%Остановка #%order% &7- &f%town%"
       lore:
-        - "&7Town: &f%town%"
-        - "&7World: &f%world%"
-        - "&7Position: &f%position%"
-        - "&7Duration: &f%duration% min"
-        - "&7Active Stop: &f%active%"
-        - "&eShift-click to remove."
+        - "&7Город: &f%town%"
+        - "&7Мир: &f%world%"
+        - "&7Позиция: &f%position%"
+        - "&7Длительность: &f%duration% мин"
+        - "&7Текущая остановка: &f%active%"
+        - "&eShift-клик, чтобы удалить."
     buttons:
       back:
-        name: "&eBack"
+        name: "&eНазад"
         lore:
-          - "&7Return to caravan setup."
+          - "&7Вернуться к настройке каравана."
       add-stop:
-        name: "&aAdd Route Stop"
+        name: "&aДобавить остановку"
         lore:
-          - "&7Choose a Towny town and stop time."
+          - "&7Выбрать город Towny и время остановки."
       loop:
-        enabled-name: "&aLoop Route: ON"
-        disabled-name: "&cLoop Route: OFF"
+        enabled-name: "&aЦикл маршрута: ВКЛ"
+        disabled-name: "&cЦикл маршрута: ВЫКЛ"
         lore:
-          - "&7Loop allowed: &f%allowed%"
-          - "&7Estimated route duration: &f%duration% min"
-          - "&eClick to toggle."
+          - "&7Цикл разрешён: &f%allowed%"
+          - "&7Примерная длительность маршрута: &f%duration% мин"
+          - "&eНажмите для переключения."
       start:
-        name: "&aStart Route"
+        name: "&aЗапустить маршрут"
         lore:
-          - "&7Begin running this caravan route."
+          - "&7Начать выполнение маршрута каравана."
       stop:
-        name: "&cStop Route"
+        name: "&cОстановить маршрут"
         lore:
-          - "&7Stop the running route."
+          - "&7Остановить текущий маршрут."
       clear:
-        name: "&cClear Route"
+        name: "&cОчистить маршрут"
         lore:
-          - "&7Remove all configured route stops."
+          - "&7Удалить все настроенные остановки."
       previous:
-        name: "&ePrevious"
+        name: "&eПредыдущая"
         lore:
-          - "&7Go to previous page."
+          - "&7Перейти на предыдущую страницу."
       next:
-        name: "&eNext"
+        name: "&eСледующая"
         lore:
-          - "&7Go to next page."
+          - "&7Перейти на следующую страницу."
       close:
-        name: "&cClose"
+        name: "&cЗакрыть"
         lore:
-          - "&7Close this menu."
+          - "&7Закрыть это меню."
     town-select:
-      title: "&8Route Towns"
+      title: "&8Города маршрута"
       item:
         name: "&6%town%"
         lore:
-          - "&7Relation: &f%relation%"
-          - "&7Shop Plots: &f%shop_plots%"
-          - "&eClick to pick a random Shop Plot."
+          - "&7Отношение: &f%relation%"
+          - "&7Shop Plot: &f%shop_plots%"
+          - "&eНажмите, чтобы выбрать случайный Shop Plot."
       back:
-        name: "&eBack"
+        name: "&eНазад"
         lore:
-          - "&7Return to route setup."
+          - "&7Вернуться к настройке маршрута."
       previous:
-        name: "&ePrevious"
+        name: "&eПредыдущая"
         lore:
-          - "&7Go to previous page."
+          - "&7Перейти на предыдущую страницу."
       next:
-        name: "&eNext"
+        name: "&eСледующая"
         lore:
-          - "&7Go to next page."
+          - "&7Перейти на следующую страницу."
       close:
-        name: "&cClose"
+        name: "&cЗакрыть"
         lore:
-          - "&7Close this menu."
+          - "&7Закрыть это меню."
   info:
-    title: "&8Caravan Info"
+    title: "&8Информация о караване"
     main:
       name: "&6%name%"
       lore:
         - "&7ID: &f%id%"
-        - "&7Owner: &f%player%"
-        - "&7Status: &f%status%"
+        - "&7Владелец: &f%player%"
+        - "&7Статус: &f%status%"
         - "&7HP: &f%hp%&7/&f%max_hp%"
     close:
-      name: "&cClose"
+      name: "&cЗакрыть"
       lore:
-        - "&7Close this menu."
+        - "&7Закрыть это меню."
