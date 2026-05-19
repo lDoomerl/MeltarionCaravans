@@ -18,6 +18,8 @@ public interface CaravanStorage extends AutoCloseable {
 
     void deleteCaravanData(UUID caravanId) throws StorageException;
 
+    void updateCaravan(CaravanRecord caravan) throws StorageException;
+
     void updateCaravanState(UUID caravanId, String status, int hp, String updatedAt) throws StorageException;
 
     @Override

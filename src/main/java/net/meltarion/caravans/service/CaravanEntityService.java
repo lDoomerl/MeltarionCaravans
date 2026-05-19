@@ -118,6 +118,17 @@ public final class CaravanEntityService {
         return spawnedCaravans.containsKey(caravanId);
     }
 
+    public synchronized void syncCaravanProjection(UUID caravanId, Location baseLocation) {
+        SpawnedCaravanEntities entities = spawnedCaravans.get(caravanId);
+        if (entities == null || baseLocation.getWorld() == null) {
+            return;
+        }
+
+        teleportEntityIfNeeded(entities.traderId(), baseLocation.clone().add(0.5D, 0.0D, 0.5D));
+        teleportEntityIfNeeded(entities.llamaOneId(), baseLocation.clone().add(1.5D, 0.0D, 0.5D));
+        teleportEntityIfNeeded(entities.llamaTwoId(), baseLocation.clone().add(-0.5D, 0.0D, 0.5D));
+    }
+
     public UUID findCaravanId(Entity entity) {
         String value = entity.getPersistentDataContainer().get(caravanIdKey, PersistentDataType.STRING);
         if (value == null) {
@@ -229,6 +240,16 @@ public final class CaravanEntityService {
         Entity entity = Bukkit.getEntity(entityId);
         if (entity != null && entity.isValid()) {
             entity.remove();
+        }
+    }
+
+    private void teleportEntityIfNeeded(UUID entityId, Location location) {
+        Entity entity = Bukkit.getEntity(entityId);
+        if (entity == null || !entity.isValid() || entity.isDead()) {
+            return;
+        }
+        if (!entity.getWorld().equals(location.getWorld()) || entity.getLocation().distanceSquared(location) > 16.0D) {
+            entity.teleport(location);
         }
     }
 

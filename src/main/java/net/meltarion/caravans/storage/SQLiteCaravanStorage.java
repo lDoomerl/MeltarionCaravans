@@ -10,7 +10,9 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -31,6 +33,23 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
             status TEXT NOT NULL,
             hp INTEGER NOT NULL,
             max_hp INTEGER NOT NULL,
+            world_name TEXT,
+            virtual_x REAL,
+            virtual_y REAL,
+            virtual_z REAL,
+            target_world_name TEXT,
+            target_x REAL,
+            target_y REAL,
+            target_z REAL,
+            movement_started_at TEXT,
+            movement_updated_at TEXT,
+            speed_blocks_per_second REAL NOT NULL DEFAULT 1.5,
+            eta_seconds INTEGER,
+            physical_spawned INTEGER NOT NULL DEFAULT 0,
+            home_world_name TEXT,
+            home_x REAL,
+            home_y REAL,
+            home_z REAL,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         )
@@ -84,14 +103,26 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
         """;
 
     private static final String SELECT_ALL_CARAVANS = """
-        SELECT id, owner_uuid, owner_name, name, status, hp, max_hp, created_at, updated_at
+        SELECT id, owner_uuid, owner_name, name, status, hp, max_hp,
+               world_name, virtual_x, virtual_y, virtual_z,
+               target_world_name, target_x, target_y, target_z,
+               movement_started_at, movement_updated_at, speed_blocks_per_second, eta_seconds, physical_spawned,
+               home_world_name, home_x, home_y, home_z,
+               created_at, updated_at
         FROM caravans
         ORDER BY created_at ASC
         """;
 
     private static final String INSERT_CARAVAN = """
-        INSERT INTO caravans (id, owner_uuid, owner_name, name, status, hp, max_hp, created_at, updated_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO caravans (
+            id, owner_uuid, owner_name, name, status, hp, max_hp,
+            world_name, virtual_x, virtual_y, virtual_z,
+            target_world_name, target_x, target_y, target_z,
+            movement_started_at, movement_updated_at, speed_blocks_per_second, eta_seconds, physical_spawned,
+            home_world_name, home_x, home_y, home_z,
+            created_at, updated_at
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """;
 
     private static final String RENAME_CARAVAN = """
@@ -108,6 +139,16 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
     private static final String UPDATE_CARAVAN_STATE = """
         UPDATE caravans
         SET status = ?, hp = ?, updated_at = ?
+        WHERE id = ?
+        """;
+
+    private static final String UPDATE_CARAVAN = """
+        UPDATE caravans
+        SET owner_name = ?, name = ?, status = ?, hp = ?, max_hp = ?,
+            world_name = ?, virtual_x = ?, virtual_y = ?, virtual_z = ?,
+            target_world_name = ?, target_x = ?, target_y = ?, target_z = ?,
+            movement_started_at = ?, movement_updated_at = ?, speed_blocks_per_second = ?, eta_seconds = ?, physical_spawned = ?,
+            home_world_name = ?, home_x = ?, home_y = ?, home_z = ?, updated_at = ?
         WHERE id = ?
         """;
 
@@ -190,6 +231,7 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
                 statement.execute("PRAGMA synchronous=NORMAL");
                 statement.execute("PRAGMA busy_timeout=5000");
                 statement.executeUpdate(CREATE_CARAVANS_TABLE);
+                ensureCaravanColumns(statement);
                 statement.executeUpdate(CREATE_OWNER_INDEX);
                 statement.executeUpdate(CREATE_CARAVAN_INVENTORIES_TABLE);
                 statement.executeUpdate(CREATE_TRADE_OPERATIONS_TABLE);
@@ -239,11 +281,63 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
             statement.setString(5, caravan.status().name());
             statement.setInt(6, caravan.hp());
             statement.setInt(7, caravan.maxHp());
-            statement.setString(8, caravan.createdAt().toString());
-            statement.setString(9, caravan.updatedAt().toString());
+            statement.setString(8, caravan.worldName());
+            setNullableDouble(statement, 9, caravan.virtualX());
+            setNullableDouble(statement, 10, caravan.virtualY());
+            setNullableDouble(statement, 11, caravan.virtualZ());
+            statement.setString(12, caravan.targetWorldName());
+            setNullableDouble(statement, 13, caravan.targetX());
+            setNullableDouble(statement, 14, caravan.targetY());
+            setNullableDouble(statement, 15, caravan.targetZ());
+            setNullableInstant(statement, 16, caravan.movementStartedAt());
+            setNullableInstant(statement, 17, caravan.movementUpdatedAt());
+            statement.setDouble(18, caravan.speedBlocksPerSecond());
+            setNullableInteger(statement, 19, caravan.etaSeconds());
+            statement.setInt(20, caravan.physicalSpawned() ? 1 : 0);
+            statement.setString(21, caravan.homeWorldName());
+            setNullableDouble(statement, 22, caravan.homeX());
+            setNullableDouble(statement, 23, caravan.homeY());
+            setNullableDouble(statement, 24, caravan.homeZ());
+            statement.setString(25, caravan.createdAt().toString());
+            statement.setString(26, caravan.updatedAt().toString());
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new StorageException("Failed to insert caravan into SQLite.", exception);
+        }
+    }
+
+    @Override
+    public synchronized void updateCaravan(CaravanRecord caravan) throws StorageException {
+        ensureInitialized();
+
+        try (PreparedStatement statement = connection.prepareStatement(UPDATE_CARAVAN)) {
+            statement.setString(1, caravan.ownerName());
+            statement.setString(2, caravan.name());
+            statement.setString(3, caravan.status().name());
+            statement.setInt(4, caravan.hp());
+            statement.setInt(5, caravan.maxHp());
+            statement.setString(6, caravan.worldName());
+            setNullableDouble(statement, 7, caravan.virtualX());
+            setNullableDouble(statement, 8, caravan.virtualY());
+            setNullableDouble(statement, 9, caravan.virtualZ());
+            statement.setString(10, caravan.targetWorldName());
+            setNullableDouble(statement, 11, caravan.targetX());
+            setNullableDouble(statement, 12, caravan.targetY());
+            setNullableDouble(statement, 13, caravan.targetZ());
+            setNullableInstant(statement, 14, caravan.movementStartedAt());
+            setNullableInstant(statement, 15, caravan.movementUpdatedAt());
+            statement.setDouble(16, caravan.speedBlocksPerSecond());
+            setNullableInteger(statement, 17, caravan.etaSeconds());
+            statement.setInt(18, caravan.physicalSpawned() ? 1 : 0);
+            statement.setString(19, caravan.homeWorldName());
+            setNullableDouble(statement, 20, caravan.homeX());
+            setNullableDouble(statement, 21, caravan.homeY());
+            setNullableDouble(statement, 22, caravan.homeZ());
+            statement.setString(23, caravan.updatedAt().toString());
+            statement.setString(24, caravan.id().toString());
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new StorageException("Failed to update caravan in SQLite.", exception);
         }
     }
 
@@ -513,6 +607,23 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
                 CaravanStatus.valueOf(resultSet.getString("status")),
                 resultSet.getInt("hp"),
                 resultSet.getInt("max_hp"),
+                resultSet.getString("world_name"),
+                getNullableDouble(resultSet, "virtual_x"),
+                getNullableDouble(resultSet, "virtual_y"),
+                getNullableDouble(resultSet, "virtual_z"),
+                resultSet.getString("target_world_name"),
+                getNullableDouble(resultSet, "target_x"),
+                getNullableDouble(resultSet, "target_y"),
+                getNullableDouble(resultSet, "target_z"),
+                parseNullableInstant(resultSet.getString("movement_started_at")),
+                parseNullableInstant(resultSet.getString("movement_updated_at")),
+                resultSet.getDouble("speed_blocks_per_second"),
+                getNullableInteger(resultSet, "eta_seconds"),
+                resultSet.getInt("physical_spawned") == 1,
+                resultSet.getString("home_world_name"),
+                getNullableDouble(resultSet, "home_x"),
+                getNullableDouble(resultSet, "home_y"),
+                getNullableDouble(resultSet, "home_z"),
                 Instant.parse(resultSet.getString("created_at")),
                 Instant.parse(resultSet.getString("updated_at"))
             );
@@ -554,5 +665,76 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
         if (connection == null) {
             throw new StorageException("SQLite storage has not been initialized.");
         }
+    }
+
+    private void ensureCaravanColumns(Statement statement) throws SQLException {
+        Set<String> columns = new HashSet<>();
+        try (ResultSet resultSet = statement.executeQuery("PRAGMA table_info(caravans)")) {
+            while (resultSet.next()) {
+                columns.add(resultSet.getString("name"));
+            }
+        }
+
+        addCaravanColumnIfMissing(statement, columns, "world_name", "ALTER TABLE caravans ADD COLUMN world_name TEXT");
+        addCaravanColumnIfMissing(statement, columns, "virtual_x", "ALTER TABLE caravans ADD COLUMN virtual_x REAL");
+        addCaravanColumnIfMissing(statement, columns, "virtual_y", "ALTER TABLE caravans ADD COLUMN virtual_y REAL");
+        addCaravanColumnIfMissing(statement, columns, "virtual_z", "ALTER TABLE caravans ADD COLUMN virtual_z REAL");
+        addCaravanColumnIfMissing(statement, columns, "target_world_name", "ALTER TABLE caravans ADD COLUMN target_world_name TEXT");
+        addCaravanColumnIfMissing(statement, columns, "target_x", "ALTER TABLE caravans ADD COLUMN target_x REAL");
+        addCaravanColumnIfMissing(statement, columns, "target_y", "ALTER TABLE caravans ADD COLUMN target_y REAL");
+        addCaravanColumnIfMissing(statement, columns, "target_z", "ALTER TABLE caravans ADD COLUMN target_z REAL");
+        addCaravanColumnIfMissing(statement, columns, "movement_started_at", "ALTER TABLE caravans ADD COLUMN movement_started_at TEXT");
+        addCaravanColumnIfMissing(statement, columns, "movement_updated_at", "ALTER TABLE caravans ADD COLUMN movement_updated_at TEXT");
+        addCaravanColumnIfMissing(statement, columns, "speed_blocks_per_second", "ALTER TABLE caravans ADD COLUMN speed_blocks_per_second REAL NOT NULL DEFAULT 1.5");
+        addCaravanColumnIfMissing(statement, columns, "eta_seconds", "ALTER TABLE caravans ADD COLUMN eta_seconds INTEGER");
+        addCaravanColumnIfMissing(statement, columns, "physical_spawned", "ALTER TABLE caravans ADD COLUMN physical_spawned INTEGER NOT NULL DEFAULT 0");
+        addCaravanColumnIfMissing(statement, columns, "home_world_name", "ALTER TABLE caravans ADD COLUMN home_world_name TEXT");
+        addCaravanColumnIfMissing(statement, columns, "home_x", "ALTER TABLE caravans ADD COLUMN home_x REAL");
+        addCaravanColumnIfMissing(statement, columns, "home_y", "ALTER TABLE caravans ADD COLUMN home_y REAL");
+        addCaravanColumnIfMissing(statement, columns, "home_z", "ALTER TABLE caravans ADD COLUMN home_z REAL");
+    }
+
+    private void addCaravanColumnIfMissing(Statement statement, Set<String> existingColumns, String column, String sql) throws SQLException {
+        if (!existingColumns.contains(column)) {
+            statement.executeUpdate(sql);
+        }
+    }
+
+    private void setNullableDouble(PreparedStatement statement, int index, Double value) throws SQLException {
+        if (value == null) {
+            statement.setNull(index, java.sql.Types.REAL);
+        } else {
+            statement.setDouble(index, value);
+        }
+    }
+
+    private void setNullableInteger(PreparedStatement statement, int index, Integer value) throws SQLException {
+        if (value == null) {
+            statement.setNull(index, java.sql.Types.INTEGER);
+        } else {
+            statement.setInt(index, value);
+        }
+    }
+
+    private void setNullableInstant(PreparedStatement statement, int index, Instant value) throws SQLException {
+        if (value == null) {
+            statement.setNull(index, java.sql.Types.VARCHAR);
+        } else {
+            statement.setString(index, value.toString());
+        }
+    }
+
+    private Double getNullableDouble(ResultSet resultSet, String column) throws SQLException {
+        double value = resultSet.getDouble(column);
+        return resultSet.wasNull() ? null : value;
+    }
+
+    private Integer getNullableInteger(ResultSet resultSet, String column) throws SQLException {
+        int value = resultSet.getInt(column);
+        return resultSet.wasNull() ? null : value;
+    }
+
+    private Instant parseNullableInstant(String value) {
+        return value == null || value.isBlank() ? null : Instant.parse(value);
     }
 }

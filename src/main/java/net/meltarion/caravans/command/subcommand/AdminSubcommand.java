@@ -7,6 +7,7 @@ import net.meltarion.caravans.command.CommandContext;
 import net.meltarion.caravans.model.CaravanRecord;
 import net.meltarion.caravans.model.TradeOperationType;
 import net.meltarion.caravans.service.CaravanLookupResult;
+import net.meltarion.caravans.service.CaravanMovementResult;
 import net.meltarion.caravans.service.CaravanMutationResult;
 import net.meltarion.caravans.service.PhysicalSpawnFailureReason;
 import net.meltarion.caravans.service.PhysicalSpawnResult;
@@ -48,6 +49,9 @@ public final class AdminSubcommand implements CaravanSubcommand {
             case "setup" -> handleSetup(context);
             case "spawn" -> handleSpawn(context);
             case "despawn" -> handleDespawn(context);
+            case "move" -> handleMove(context);
+            case "position" -> handlePosition(context);
+            case "return" -> handleReturn(context);
             case "trades" -> handleTrades(context);
             case "sell" -> handleSell(context);
             case "buy" -> handleBuy(context);
@@ -61,7 +65,7 @@ public final class AdminSubcommand implements CaravanSubcommand {
     @Override
     public List<String> tabComplete(CommandContext context) {
         if (context.args().length == 1) {
-            return List.of("list", "info", "open", "setup", "spawn", "despawn", "trades", "sell", "buy", "delete", "reload", "givelicense").stream()
+            return List.of("list", "info", "open", "setup", "spawn", "despawn", "move", "position", "return", "trades", "sell", "buy", "delete", "reload", "givelicense").stream()
                 .filter(option -> option.startsWith(context.args()[0].toLowerCase()))
                 .toList();
         }
@@ -143,6 +147,7 @@ public final class AdminSubcommand implements CaravanSubcommand {
         }
 
         context.entities().despawnCaravan(lookupResult.caravan().id());
+        context.movement().removeRuntimeCaravan(lookupResult.caravan().id());
 
         context.messages().send(context.sender(), "deleted", Map.of(
             "id", context.caravans().getShortId(mutationResult.caravan()),
@@ -209,6 +214,12 @@ public final class AdminSubcommand implements CaravanSubcommand {
             return;
         }
 
+        if (!context.movement().setManualPosition(caravan, targetPlayer.getLocation(), false, true).success()) {
+            context.entities().despawnCaravan(caravan.id());
+            context.messages().send(context.sender(), "storage-error");
+            return;
+        }
+
         context.messages().send(context.sender(), "physical-spawned", physicalPlaceholders(context, caravan));
     }
 
@@ -228,7 +239,75 @@ public final class AdminSubcommand implements CaravanSubcommand {
             return;
         }
 
+        context.movement().markPhysicalProjection(caravan, false);
+
         context.messages().send(context.sender(), "physical-despawned", physicalPlaceholders(context, caravan));
+    }
+
+    private void handleMove(CommandContext context) {
+        if (context.args().length < 6) {
+            context.messages().send(context.sender(), "admin-move-usage");
+            return;
+        }
+
+        CaravanRecord caravan = resolveAdminCaravan(context, context.args()[2]);
+        if (caravan == null) {
+            return;
+        }
+
+        org.bukkit.World world = Bukkit.getWorld(context.args()[3]);
+        if (world == null) {
+            context.messages().send(context.sender(), "movement-invalid-target");
+            return;
+        }
+
+        double x;
+        double z;
+        try {
+            x = Double.parseDouble(context.args()[4]);
+            z = Double.parseDouble(context.args()[5]);
+        } catch (NumberFormatException exception) {
+            context.messages().send(context.sender(), "movement-invalid-target");
+            return;
+        }
+
+        CaravanMovementResult result = context.movement().startMovement(caravan, world, x, z, net.meltarion.caravans.model.CaravanStatus.TRAVELING);
+        handleMovementResult(context, result, "movement-started");
+    }
+
+    private void handleReturn(CommandContext context) {
+        if (context.args().length < 3) {
+            context.messages().send(context.sender(), "admin-return-usage");
+            return;
+        }
+
+        CaravanRecord caravan = resolveAdminCaravan(context, context.args()[2]);
+        if (caravan == null) {
+            return;
+        }
+
+        CaravanMovementResult result = context.movement().returnHome(caravan);
+        handleMovementResult(context, result, "movement-started");
+    }
+
+    private void handlePosition(CommandContext context) {
+        if (context.args().length < 3) {
+            context.messages().send(context.sender(), "admin-position-usage");
+            return;
+        }
+
+        CaravanRecord caravan = resolveAdminCaravan(context, context.args()[2]);
+        if (caravan == null) {
+            return;
+        }
+
+        CaravanRecord runtime = context.movement().getRuntimeCaravan(caravan.id());
+        if (runtime == null || !runtime.hasVirtualPosition()) {
+            context.messages().send(context.sender(), "movement-no-position");
+            return;
+        }
+
+        context.messages().sendList(context.sender(), "movement-position-info", movementPlaceholders(context, runtime));
     }
 
     private void handleSetup(CommandContext context) {
@@ -433,6 +512,39 @@ public final class AdminSubcommand implements CaravanSubcommand {
             "player", caravan.ownerName(),
             "hp", String.valueOf(caravan.hp()),
             "max_hp", String.valueOf(caravan.maxHp())
+        );
+    }
+
+    private void handleMovementResult(CommandContext context, CaravanMovementResult result, String successMessageKey) {
+        if (!result.success()) {
+            switch (result.failureReason()) {
+                case DISABLED -> context.messages().send(context.sender(), "movement-disabled");
+                case NO_POSITION -> context.messages().send(context.sender(), "movement-no-position");
+                case INVALID_TARGET -> context.messages().send(context.sender(), "movement-invalid-target");
+                case HOME_MISSING -> context.messages().send(context.sender(), "movement-no-home");
+                case STORAGE_ERROR -> context.messages().send(context.sender(), "storage-error");
+            }
+            return;
+        }
+
+        context.messages().send(context.sender(), successMessageKey, movementPlaceholders(context, result.caravan()));
+    }
+
+    private Map<String, String> movementPlaceholders(CommandContext context, CaravanRecord caravan) {
+        return Map.ofEntries(
+            Map.entry("id", context.caravans().getShortId(caravan)),
+            Map.entry("name", caravan.name()),
+            Map.entry("world", caravan.worldName() == null ? "unknown" : caravan.worldName()),
+            Map.entry("x", caravan.virtualX() == null ? "?" : String.format(java.util.Locale.US, "%.1f", caravan.virtualX())),
+            Map.entry("y", caravan.virtualY() == null ? "?" : String.format(java.util.Locale.US, "%.1f", caravan.virtualY())),
+            Map.entry("z", caravan.virtualZ() == null ? "?" : String.format(java.util.Locale.US, "%.1f", caravan.virtualZ())),
+            Map.entry("target_x", caravan.targetX() == null ? "?" : String.format(java.util.Locale.US, "%.1f", caravan.targetX())),
+            Map.entry("target_y", caravan.targetY() == null ? "?" : String.format(java.util.Locale.US, "%.1f", caravan.targetY())),
+            Map.entry("target_z", caravan.targetZ() == null ? "?" : String.format(java.util.Locale.US, "%.1f", caravan.targetZ())),
+            Map.entry("speed", String.format(java.util.Locale.US, "%.2f", caravan.speedBlocksPerSecond())),
+            Map.entry("eta", caravan.etaSeconds() == null ? "?" : String.valueOf(caravan.etaSeconds())),
+            Map.entry("status", caravan.status().name()),
+            Map.entry("physical_spawned", String.valueOf(caravan.physicalSpawned()))
         );
     }
 }

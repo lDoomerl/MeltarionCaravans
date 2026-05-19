@@ -99,6 +99,14 @@ public final class PersistentCaravanService implements CaravanService {
     }
 
     @Override
+    public synchronized List<CaravanRecord> getAllCaravans() {
+        return caravansByOwner.values().stream()
+            .flatMap(List::stream)
+            .sorted(Comparator.comparing(CaravanRecord::createdAt))
+            .toList();
+    }
+
+    @Override
     public synchronized CaravanLookupResult findCaravanForOwner(UUID ownerId, String reference) {
         return findCaravanInternal(getCaravans(ownerId), reference);
     }
@@ -136,17 +144,7 @@ public final class PersistentCaravanService implements CaravanService {
         }
 
         Instant updatedAt = Instant.now();
-        CaravanRecord updatedRecord = new CaravanRecord(
-            caravan.id(),
-            caravan.ownerId(),
-            caravan.ownerName(),
-            sanitizedName,
-            caravan.status(),
-            caravan.hp(),
-            caravan.maxHp(),
-            caravan.createdAt(),
-            updatedAt
-        );
+        CaravanRecord updatedRecord = caravan.withName(sanitizedName, updatedAt);
 
         try {
             storage.renameCaravan(caravan.id(), sanitizedName, updatedAt.toString());
@@ -175,22 +173,24 @@ public final class PersistentCaravanService implements CaravanService {
     }
 
     @Override
+    public synchronized CaravanMutationResult updateCaravanRecord(CaravanRecord caravan) {
+        try {
+            storage.updateCaravan(caravan);
+        } catch (StorageException exception) {
+            logger.log(Level.SEVERE, "Failed to update caravan " + caravan.id() + '.', exception);
+            return CaravanMutationResult.failure(CaravanMutationResult.FailureReason.STORAGE_ERROR);
+        }
+
+        replaceCachedCaravan(caravan);
+        return CaravanMutationResult.success(caravan);
+    }
+
+    @Override
     public synchronized CaravanMutationResult updateCaravanHealthAndStatus(CaravanRecord caravan, int hp, CaravanStatus status) {
         int normalizedHp = Math.max(0, Math.min(hp, caravan.maxHp()));
         CaravanStatus normalizedStatus = status == null ? caravan.status() : status;
         Instant updatedAt = Instant.now();
-
-        CaravanRecord updatedRecord = new CaravanRecord(
-            caravan.id(),
-            caravan.ownerId(),
-            caravan.ownerName(),
-            caravan.name(),
-            normalizedStatus,
-            normalizedHp,
-            caravan.maxHp(),
-            caravan.createdAt(),
-            updatedAt
-        );
+        CaravanRecord updatedRecord = caravan.withHealthAndStatus(normalizedHp, normalizedStatus, updatedAt);
 
         try {
             storage.updateCaravanState(caravan.id(), normalizedStatus.name(), normalizedHp, updatedAt.toString());
@@ -264,6 +264,23 @@ public final class PersistentCaravanService implements CaravanService {
             CaravanStatus.IDLE,
             maxHp,
             maxHp,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            configManager.getDefaultMovementSpeedBlocksPerSecond(),
+            null,
+            false,
+            null,
+            null,
+            null,
+            null,
             now,
             now
         );

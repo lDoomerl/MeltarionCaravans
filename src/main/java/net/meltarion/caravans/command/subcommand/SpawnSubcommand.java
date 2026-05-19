@@ -90,6 +90,12 @@ public final class SpawnSubcommand implements CaravanSubcommand {
             return;
         }
 
+        if (!context.movement().setManualPosition(caravan, getSpawnLocation(context, player), true, true).success()) {
+            context.entities().despawnCaravan(caravan.id());
+            context.messages().send(player, "storage-error");
+            return;
+        }
+
         context.messages().send(player, "physical-spawned", placeholders(context, caravan));
     }
 

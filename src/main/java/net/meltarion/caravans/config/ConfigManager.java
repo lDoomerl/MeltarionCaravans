@@ -196,6 +196,50 @@ public final class ConfigManager {
         return config.getBoolean("debug.enabled", false);
     }
 
+    public boolean isMovementEnabled() {
+        return config.getBoolean("movement.enabled", true);
+    }
+
+    public int getMovementTickIntervalSeconds() {
+        return Math.max(1, config.getInt("movement.tick-interval-seconds", 2));
+    }
+
+    public int getMovementDatabaseSaveIntervalSeconds() {
+        return Math.max(5, config.getInt("movement.database-save-interval-seconds", 30));
+    }
+
+    public double getDefaultMovementSpeedBlocksPerSecond() {
+        return Math.max(0.1D, config.getDouble("movement.default-speed-blocks-per-second", 1.5D));
+    }
+
+    public int getPhysicalProjectionRadius() {
+        return Math.max(1, config.getInt("movement.physical-projection-radius", 96));
+    }
+
+    public int getPhysicalDespawnRadius() {
+        return Math.max(getPhysicalProjectionRadius(), config.getInt("movement.physical-despawn-radius", 128));
+    }
+
+    public double getMovementArrivalDistance() {
+        return Math.max(0.5D, config.getDouble("movement.arrival-distance", 3.0D));
+    }
+
+    public boolean shouldAdjustMovementYToHighestBlock() {
+        return config.getBoolean("movement.adjust-y-to-highest-block", true);
+    }
+
+    public int getMovementMaxYAdjustPerUpdate() {
+        return Math.max(1, config.getInt("movement.max-y-adjust-per-update", 8));
+    }
+
+    public boolean shouldPauseMovementWhenAttacked() {
+        return config.getBoolean("movement.pause-when-attacked", true);
+    }
+
+    public boolean isMovementDebugEnabled() {
+        return config.getBoolean("movement.debug", false);
+    }
+
     public String getMessage(String path) {
         return config.getString("messages." + path, "");
     }

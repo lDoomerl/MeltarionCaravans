@@ -15,6 +15,8 @@ public interface CaravanService {
 
     List<CaravanRecord> getCaravansByOwnerName(String ownerName);
 
+    List<CaravanRecord> getAllCaravans();
+
     CaravanLookupResult findCaravanForOwner(UUID ownerId, String reference);
 
     CaravanLookupResult findCaravan(String reference);
@@ -24,6 +26,8 @@ public interface CaravanService {
     CaravanMutationResult renameCaravan(CaravanRecord caravan, String requestedName);
 
     CaravanMutationResult deleteCaravan(CaravanRecord caravan);
+
+    CaravanMutationResult updateCaravanRecord(CaravanRecord caravan);
 
     CaravanMutationResult updateCaravanHealthAndStatus(CaravanRecord caravan, int hp, net.meltarion.caravans.model.CaravanStatus status);
 

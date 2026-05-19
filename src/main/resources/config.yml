@@ -45,6 +45,19 @@ trade:
 debug:
   enabled: false
 
+movement:
+  enabled: true
+  tick-interval-seconds: 2
+  database-save-interval-seconds: 30
+  default-speed-blocks-per-second: 1.5
+  physical-projection-radius: 96
+  physical-despawn-radius: 128
+  arrival-distance: 3
+  adjust-y-to-highest-block: true
+  max-y-adjust-per-update: 8
+  pause-when-attacked: true
+  debug: false
+
 physical-caravan:
   enabled: true
   despawn-on-plugin-disable: true
@@ -172,8 +185,35 @@ messages:
   admin-sell-usage: "&cUsage: /caravan admin sell <id> <slot> <price>"
   admin-buy-usage: "&cUsage: /caravan admin buy <id> <material> <amount-per-transaction> <price> <max-total>"
   admin-delete-usage: "&cUsage: /caravan admin delete <id>"
+  admin-move-usage: "&cUsage: /caravan admin move <id> <world> <x> <z>"
+  admin-position-usage: "&cUsage: /caravan admin position <id>"
+  admin-return-usage: "&cUsage: /caravan admin return <id>"
   admin-givelicense-usage: "&cUsage: /caravan admin givelicense <player> [amount]"
+  move-usage: "&cUsage: /caravan move <id> <x> <z>"
+  stop-usage: "&cUsage: /caravan stop <id>"
+  return-usage: "&cUsage: /caravan return <id>"
   unknown-subcommand: "&cUnknown subcommand. Use /caravan help."
+  movement-started: "&aCaravan &f%name% &7(%id%) &ais now moving toward &f%target_x% %target_y% %target_z%&a in &f%world%&a. ETA: &f%eta%&a s."
+  movement-stopped: "&eCaravan &f%name% &7(%id%) &ehas stopped at &f%x% %y% %z%&e."
+  movement-arrived: "&aCaravan &f%name% &7(%id%) &aarrived at &f%x% %y% %z%&a in &f%world%&a."
+  movement-invalid-target: "&cThat movement target is invalid."
+  movement-no-position: "&cThat caravan does not have a virtual position yet."
+  movement-no-home: "&cThat caravan does not have a home position yet."
+  movement-disabled: "&cVirtual caravan movement is currently disabled."
+  movement-paused-attacked: "&cCaravan &f%name% &7(%id%) &chas paused because it was attacked."
+  projection-spawned: "&7Projection spawned for caravan &f%name% &7(%id%)&7."
+  projection-despawned: "&7Projection despawned for caravan &f%name% &7(%id%)&7."
+  movement-position-info:
+    - "&6Caravan Position"
+    - "&7ID: &f%id%"
+    - "&7Name: &f%name%"
+    - "&7World: &f%world%"
+    - "&7Virtual: &f%x% %y% %z%"
+    - "&7Target: &f%target_x% %target_y% %target_z%"
+    - "&7Status: &f%status%"
+    - "&7Speed: &f%speed%"
+    - "&7ETA: &f%eta%"
+    - "&7Physical Projection: &f%physical_spawned%"
   info:
     - "&6Caravan Info"
     - "&7ID: &f%id%"
@@ -188,6 +228,9 @@ messages:
     - "&6/caravan rename <id> <name> &7- Rename your caravan"
     - "&6/caravan delete <id> &7- Delete your caravan"
     - "&6/caravan spawn <id> &7- Spawn your physical caravan in your town"
+    - "&6/caravan move <id> <x> <z> &7- Start virtual caravan movement"
+    - "&6/caravan stop <id> &7- Stop your moving caravan"
+    - "&6/caravan return <id> &7- Send your caravan home"
     - "&6/caravan reload &7- Reload the plugin configuration"
     - "&6/caravan admin ... &7- Administrative caravan commands"
   admin-help:
@@ -197,6 +240,9 @@ messages:
     - "&6/caravan admin setup <id> &7- Open the owner-style setup GUI"
     - "&6/caravan admin spawn <id> [player] &7- Spawn a physical caravan"
     - "&6/caravan admin despawn <id> &7- Remove a physical caravan"
+    - "&6/caravan admin move <id> <world> <x> <z> &7- Start admin movement"
+    - "&6/caravan admin position <id> &7- Show virtual caravan position"
+    - "&6/caravan admin return <id> &7- Send a caravan to its home"
     - "&6/caravan admin trades <id> &7- Open the trade management GUI"
     - "&6/caravan admin sell <id> <slot> <price> &7- Create a SELL operation"
     - "&6/caravan admin buy <id> <material> <amount> <price> <max> &7- Create a BUY operation"

@@ -9,7 +9,7 @@ softdepend: [Towny]
 commands:
   caravan:
     description: Main command for caravan management.
-    usage: /caravan <help|reload|create|list|info|rename|delete|spawn|admin>
+    usage: /caravan <help|reload|create|list|info|rename|delete|spawn|move|stop|return|admin>
     aliases: [caravans]
 permissions:
   meltarion.caravans.use:

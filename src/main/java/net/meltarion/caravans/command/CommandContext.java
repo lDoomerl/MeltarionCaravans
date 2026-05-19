@@ -4,6 +4,7 @@ import net.meltarion.caravans.MeltarionCaravansPlugin;
 import net.meltarion.caravans.config.ConfigManager;
 import net.meltarion.caravans.service.CaravanInventoryService;
 import net.meltarion.caravans.service.CaravanEntityService;
+import net.meltarion.caravans.service.CaravanMovementService;
 import net.meltarion.caravans.service.CaravanSetupGuiService;
 import net.meltarion.caravans.service.CaravanService;
 import net.meltarion.caravans.service.CaravanLicenseService;
@@ -44,6 +45,10 @@ public record CommandContext(
 
     public CaravanEntityService entities() {
         return plugin.getCaravanEntityService();
+    }
+
+    public CaravanMovementService movement() {
+        return plugin.getCaravanMovementService();
     }
 
     public TownyIntegrationService towny() {
