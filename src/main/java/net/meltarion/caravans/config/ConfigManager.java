@@ -4,6 +4,8 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
@@ -125,6 +127,17 @@ public final class ConfigManager {
 
     public boolean isCaravanLicenseRightClickCreateAllowed() {
         return config.getBoolean("caravan-license.allow-right-click-create", true);
+    }
+
+    public int getTradeSetupTimeoutSeconds() {
+        return Math.max(5, config.getInt("trade.setup-timeout-seconds", 60));
+    }
+
+    public Set<Material> getTradeBuyCatalogBlacklist() {
+        return config.getStringList("trade.buy-catalog.blacklist").stream()
+            .map(Material::matchMaterial)
+            .filter(java.util.Objects::nonNull)
+            .collect(Collectors.toUnmodifiableSet());
     }
 
     public String getMessage(String path) {

@@ -99,6 +99,20 @@ public final class CaravanInventoryService {
         return itemStack == null ? null : itemStack.clone();
     }
 
+    public ItemStack[] getInventorySnapshot(CaravanRecord caravan) throws StorageException {
+        Inventory inventory = openInventories.get(caravan.id());
+        if (inventory == null) {
+            inventory = loadInventory(caravan);
+        }
+
+        ItemStack[] snapshot = new ItemStack[inventory.getSize()];
+        ItemStack[] contents = inventory.getContents();
+        for (int index = 0; index < contents.length; index++) {
+            snapshot[index] = contents[index] == null ? null : contents[index].clone();
+        }
+        return snapshot;
+    }
+
     private Inventory loadInventory(CaravanRecord caravan) throws StorageException {
         String serializedContents = storage.loadInventoryContents(caravan.id());
         if (serializedContents == null) {

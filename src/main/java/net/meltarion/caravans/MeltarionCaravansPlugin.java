@@ -6,12 +6,16 @@ import net.meltarion.caravans.command.CaravanCommand;
 import net.meltarion.caravans.config.ConfigManager;
 import net.meltarion.caravans.listener.CaravanInventoryListener;
 import net.meltarion.caravans.listener.CaravanLicenseListener;
+import net.meltarion.caravans.listener.CaravanSetupListener;
+import net.meltarion.caravans.listener.TradeSetupSessionListener;
+import net.meltarion.caravans.service.CaravanSetupGuiService;
 import net.meltarion.caravans.service.CaravanInventoryService;
 import net.meltarion.caravans.service.CaravanService;
 import net.meltarion.caravans.service.CaravanLicenseService;
 import net.meltarion.caravans.service.MessageService;
 import net.meltarion.caravans.service.PersistentCaravanService;
 import net.meltarion.caravans.service.TradeOperationService;
+import net.meltarion.caravans.service.TradeSetupSessionService;
 import net.meltarion.caravans.storage.CaravanInventoryStorage;
 import net.meltarion.caravans.storage.CaravanStorage;
 import net.meltarion.caravans.storage.SQLiteCaravanStorage;
@@ -27,6 +31,8 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
     private CaravanLicenseService licenseService;
     private CaravanInventoryService inventoryService;
     private TradeOperationService tradeOperationService;
+    private CaravanSetupGuiService caravanSetupGuiService;
+    private TradeSetupSessionService tradeSetupSessionService;
     private CaravanStorage caravanStorage;
     private CaravanService caravanService;
 
@@ -49,6 +55,8 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
         registerCommands();
         getServer().getPluginManager().registerEvents(new CaravanInventoryListener(this), this);
         getServer().getPluginManager().registerEvents(new CaravanLicenseListener(this), this);
+        getServer().getPluginManager().registerEvents(new CaravanSetupListener(this), this);
+        getServer().getPluginManager().registerEvents(new TradeSetupSessionListener(this), this);
         getLogger().info("MeltarionCaravans enabled.");
     }
 
@@ -96,6 +104,14 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
         return tradeOperationService;
     }
 
+    public CaravanSetupGuiService getCaravanSetupGuiService() {
+        return caravanSetupGuiService;
+    }
+
+    public TradeSetupSessionService getTradeSetupSessionService() {
+        return tradeSetupSessionService;
+    }
+
     private void initializeStorage() throws StorageException {
         Path databasePath = getDataFolder().toPath().resolve("caravans.db");
         SQLiteCaravanStorage storage = new SQLiteCaravanStorage(databasePath, getLogger());
@@ -115,6 +131,13 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
         );
         persistentCaravanService.loadCaravans();
         this.caravanService = persistentCaravanService;
+        this.caravanSetupGuiService = new CaravanSetupGuiService(configManager, inventoryService, tradeOperationService);
+        this.tradeSetupSessionService = new TradeSetupSessionService(
+            caravanService,
+            tradeOperationService,
+            messageService,
+            configManager::getTradeSetupTimeoutSeconds
+        );
     }
 
     private void registerCommands() {

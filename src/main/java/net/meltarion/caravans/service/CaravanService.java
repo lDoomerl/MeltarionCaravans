@@ -19,6 +19,8 @@ public interface CaravanService {
 
     CaravanLookupResult findCaravan(String reference);
 
+    CaravanRecord getCaravan(UUID caravanId);
+
     CaravanMutationResult renameCaravan(CaravanRecord caravan, String requestedName);
 
     CaravanMutationResult deleteCaravan(CaravanRecord caravan);

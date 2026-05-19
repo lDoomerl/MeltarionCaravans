@@ -43,6 +43,7 @@ public final class AdminSubcommand implements CaravanSubcommand {
             case "list" -> handleList(context);
             case "info" -> handleInfo(context);
             case "open" -> handleOpen(context);
+            case "setup" -> handleSetup(context);
             case "trades" -> handleTrades(context);
             case "sell" -> handleSell(context);
             case "buy" -> handleBuy(context);
@@ -56,7 +57,7 @@ public final class AdminSubcommand implements CaravanSubcommand {
     @Override
     public List<String> tabComplete(CommandContext context) {
         if (context.args().length == 1) {
-            return List.of("list", "info", "open", "trades", "sell", "buy", "delete", "reload", "givelicense").stream()
+            return List.of("list", "info", "open", "setup", "trades", "sell", "buy", "delete", "reload", "givelicense").stream()
                 .filter(option -> option.startsWith(context.args()[0].toLowerCase()))
                 .toList();
         }
@@ -160,6 +161,28 @@ public final class AdminSubcommand implements CaravanSubcommand {
 
         context.trades().openTradeManagementInventory(player, caravan);
         context.messages().send(context.sender(), "trade-management-opened", Map.of(
+            "id", context.caravans().getShortId(caravan),
+            "name", caravan.name()
+        ));
+    }
+
+    private void handleSetup(CommandContext context) {
+        if (!(context.sender() instanceof Player player)) {
+            context.messages().send(context.sender(), "admin-open-only");
+            return;
+        }
+        if (context.args().length < 3) {
+            context.messages().send(context.sender(), "admin-setup-usage");
+            return;
+        }
+
+        CaravanRecord caravan = resolveAdminCaravan(context, context.args()[2]);
+        if (caravan == null) {
+            return;
+        }
+
+        context.setupGui().openMainSetup(player, caravan);
+        context.messages().send(context.sender(), "setup-opened", Map.of(
             "id", context.caravans().getShortId(caravan),
             "name", caravan.name()
         ));

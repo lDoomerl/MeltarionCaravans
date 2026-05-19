@@ -24,6 +24,24 @@ caravan-license:
   consume-on-create: true
   allow-right-click-create: true
 
+trade:
+  setup-timeout-seconds: 60
+  buy-catalog:
+    blacklist:
+      - BEDROCK
+      - BARRIER
+      - COMMAND_BLOCK
+      - CHAIN_COMMAND_BLOCK
+      - REPEATING_COMMAND_BLOCK
+      - STRUCTURE_BLOCK
+      - STRUCTURE_VOID
+      - JIGSAW
+      - LIGHT
+      - DEBUG_STICK
+      - KNOWLEDGE_BOOK
+      - PLAYER_HEAD
+      - COMMAND_BLOCK_MINECART
+
 messages:
   no-permission: "&cYou do not have permission."
   player-only: "&cOnly players can use this command."
@@ -57,6 +75,24 @@ messages:
   trade-deleted: "&aDeleted trade operation &f%id%&a."
   trade-management-opened: "&aOpened trade management for caravan &f%name% &7(%id%)&a."
   trade-slot-reserved: "&cThat slot is reserved by an active SELL trade operation."
+  setup-opened: "&aOpened caravan setup for &f%name% &7(%id%)&a."
+  setup-cancelled: "&eTrade setup cancelled."
+  setup-timeout: "&cTrade setup timed out after &f%timeout%&c seconds."
+  setup-enter-sell-price: "&eType price in currency items for this stack, or type cancel. Timeout: &f%timeout%&e seconds."
+  setup-enter-buy-amount: "&eType amount per transaction for &f%material%&e, or type cancel. Timeout: &f%timeout%&e seconds."
+  setup-enter-buy-price: "&eType price in currency items for &f%material%&e x&f%amount%&e, or type cancel."
+  setup-enter-buy-max-total: "&eType max total amount for &f%material%&e, or type cancel."
+  setup-invalid-number: "&cPlease enter a valid number or type cancel."
+  setup-invalid-price: "&cPlease enter a positive price."
+  setup-invalid-amount: "&cPlease enter a valid amount."
+  setup-invalid-max-total: "&cMax total must be positive and at least &f%amount%&c."
+  setup-sell-created: "&aCreated SELL operation for &f%name% &7(%id%) &aat price &f%price%&a."
+  setup-buy-created: "&aCreated BUY operation for &f%material% &7for caravan &f%name% &7(%id%)&a."
+  setup-no-item-selected: "&cThat slot does not contain an item."
+  setup-slot-already-reserved: "&cThat slot already has an active SELL operation."
+  setup-material-blacklisted: "&c%material% is blacklisted from the buy catalog."
+  setup-catalog-empty: "&cThe buy catalog is currently empty."
+  setup-category-empty: "&cThat category has no available materials."
   caravan-not-found: "&cCaravan not found."
   ambiguous-id: "&cThat caravan ID is ambiguous. Please use the full UUID."
   player-not-found: "&cPlayer &f%player%&c was not found."
@@ -76,6 +112,7 @@ messages:
   admin-list-usage: "&cUsage: /caravan admin list <player>"
   admin-info-usage: "&cUsage: /caravan admin info <id>"
   admin-open-usage: "&cUsage: /caravan admin open <id>"
+  admin-setup-usage: "&cUsage: /caravan admin setup <id>"
   admin-trades-usage: "&cUsage: /caravan admin trades <id>"
   admin-sell-usage: "&cUsage: /caravan admin sell <id> <slot> <price>"
   admin-buy-usage: "&cUsage: /caravan admin buy <id> <material> <amount-per-transaction> <price> <max-total>"
@@ -101,6 +138,7 @@ messages:
     - "&6/caravan admin list <player> &7- List a player's caravans"
     - "&6/caravan admin info <id> &7- View any caravan"
     - "&6/caravan admin open <id> &7- Open any caravan inventory"
+    - "&6/caravan admin setup <id> &7- Open the owner-style setup GUI"
     - "&6/caravan admin trades <id> &7- Open the trade management GUI"
     - "&6/caravan admin sell <id> <slot> <price> &7- Create a SELL operation"
     - "&6/caravan admin buy <id> <material> <amount> <price> <max> &7- Create a BUY operation"

@@ -3,6 +3,7 @@ package net.meltarion.caravans.command;
 import net.meltarion.caravans.MeltarionCaravansPlugin;
 import net.meltarion.caravans.config.ConfigManager;
 import net.meltarion.caravans.service.CaravanInventoryService;
+import net.meltarion.caravans.service.CaravanSetupGuiService;
 import net.meltarion.caravans.service.CaravanService;
 import net.meltarion.caravans.service.CaravanLicenseService;
 import net.meltarion.caravans.service.MessageService;
@@ -33,6 +34,10 @@ public record CommandContext(
 
     public TradeOperationService trades() {
         return plugin.getTradeOperationService();
+    }
+
+    public CaravanSetupGuiService setupGui() {
+        return plugin.getCaravanSetupGuiService();
     }
 
     public ConfigManager config() {

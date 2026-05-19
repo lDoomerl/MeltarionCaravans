@@ -112,6 +112,15 @@ public final class PersistentCaravanService implements CaravanService {
     }
 
     @Override
+    public synchronized CaravanRecord getCaravan(UUID caravanId) {
+        return caravansByOwner.values().stream()
+            .flatMap(List::stream)
+            .filter(caravan -> caravan.id().equals(caravanId))
+            .findFirst()
+            .orElse(null);
+    }
+
+    @Override
     public synchronized CaravanMutationResult renameCaravan(CaravanRecord caravan, String requestedName) {
         String sanitizedName = sanitizeName(requestedName);
         if (!isValidName(sanitizedName)) {
