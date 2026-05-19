@@ -6,7 +6,12 @@ import java.util.UUID;
 public record CaravanRecord(
     UUID id,
     UUID ownerId,
+    String ownerName,
     String name,
-    Instant createdAt
+    CaravanStatus status,
+    int hp,
+    int maxHp,
+    Instant createdAt,
+    Instant updatedAt
 ) {
 }

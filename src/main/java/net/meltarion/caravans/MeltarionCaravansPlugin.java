@@ -3,8 +3,13 @@ package net.meltarion.caravans;
 import net.meltarion.caravans.command.CaravanCommand;
 import net.meltarion.caravans.config.ConfigManager;
 import net.meltarion.caravans.service.CaravanService;
-import net.meltarion.caravans.service.InMemoryCaravanService;
 import net.meltarion.caravans.service.MessageService;
+import net.meltarion.caravans.service.PersistentCaravanService;
+import net.meltarion.caravans.storage.CaravanStorage;
+import net.meltarion.caravans.storage.SQLiteCaravanStorage;
+import net.meltarion.caravans.storage.StorageException;
+import java.nio.file.Path;
+import java.util.logging.Level;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -12,6 +17,7 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
 
     private ConfigManager configManager;
     private MessageService messageService;
+    private CaravanStorage caravanStorage;
     private CaravanService caravanService;
 
     @Override
@@ -20,7 +26,14 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
 
         this.configManager = new ConfigManager(this);
         this.messageService = new MessageService(configManager);
-        this.caravanService = new InMemoryCaravanService(configManager);
+
+        try {
+            initializeStorage();
+        } catch (StorageException exception) {
+            getLogger().log(Level.SEVERE, "Failed to enable MeltarionCaravans because storage initialization failed.", exception);
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
 
         registerCommands();
         getLogger().info("MeltarionCaravans enabled.");
@@ -28,6 +41,13 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (caravanStorage != null) {
+            try {
+                caravanStorage.close();
+            } catch (StorageException exception) {
+                getLogger().log(Level.SEVERE, "Failed to close caravan storage cleanly.", exception);
+            }
+        }
         getLogger().info("MeltarionCaravans disabled.");
     }
 
@@ -46,6 +66,16 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
 
     public CaravanService getCaravanService() {
         return caravanService;
+    }
+
+    private void initializeStorage() throws StorageException {
+        Path databasePath = getDataFolder().toPath().resolve("caravans.db");
+        this.caravanStorage = new SQLiteCaravanStorage(databasePath, getLogger());
+        caravanStorage.initialize();
+
+        PersistentCaravanService persistentCaravanService = new PersistentCaravanService(configManager, caravanStorage, getLogger());
+        persistentCaravanService.loadCaravans();
+        this.caravanService = persistentCaravanService;
     }
 
     private void registerCommands() {

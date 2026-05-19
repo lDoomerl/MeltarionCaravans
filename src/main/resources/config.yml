@@ -15,6 +15,7 @@ messages:
   created: "&aCreated caravan &f%name%&a."
   duplicate-name: "&cYou already have a caravan named &f%name%&c."
   limit-reached: "&cYou have reached your caravan limit of &f%limit%&c."
+  storage-error: "&cA storage error occurred. Please contact an administrator."
   list-header: "&6Your caravans:"
   list-entry: "&e- %name%"
   list-empty: "&7You do not have any caravans yet."

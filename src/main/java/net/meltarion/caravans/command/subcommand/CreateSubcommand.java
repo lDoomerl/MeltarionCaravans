@@ -40,6 +40,7 @@ public final class CreateSubcommand implements CaravanSubcommand {
                 case INVALID_NAME -> context.messages().send(context.sender(), "create-usage");
                 case DUPLICATE_NAME -> context.messages().send(context.sender(), "duplicate-name", Map.of("name", requestedName));
                 case LIMIT_REACHED -> context.messages().send(context.sender(), "limit-reached", Map.of("limit", String.valueOf(result.currentLimit())));
+                case STORAGE_ERROR -> context.messages().send(context.sender(), "storage-error");
             }
             return;
         }

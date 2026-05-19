@@ -20,6 +20,7 @@ public record CaravanCreationResult(
     public enum FailureReason {
         INVALID_NAME,
         DUPLICATE_NAME,
-        LIMIT_REACHED
+        LIMIT_REACHED,
+        STORAGE_ERROR
     }
 }

@@ -8,8 +8,9 @@
 - Java `21`
 - Config-driven currency item for MVP
 - Service-oriented plugin core
+- SQLite-backed caravan persistence
 - `/caravan` root command with base subcommands
-- No database, GUI, Towny, or Dynmap integration yet
+- No GUI, Towny, or Dynmap integration yet
 
 ## Development
 
@@ -21,7 +22,6 @@ The plugin jar will be generated in `build/libs/`.
 
 ## Roadmap
 
-- Persistent caravan storage
 - Towny-aware caravan ownership and territory rules
 - Dynmap or LiveAtlas markers
 - Virtual movement and physical caravan entities
