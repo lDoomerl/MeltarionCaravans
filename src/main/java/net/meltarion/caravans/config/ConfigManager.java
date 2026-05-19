@@ -240,6 +240,26 @@ public final class ConfigManager {
         return config.getBoolean("movement.debug", false);
     }
 
+    public int getMovementAttackedNotificationCooldownSeconds() {
+        return Math.max(1, config.getInt("movement.attacked-notification-cooldown-seconds", 30));
+    }
+
+    public int getProjectionSpawnCooldownSeconds() {
+        return Math.max(0, config.getInt("projection.spawn-cooldown-seconds", 5));
+    }
+
+    public int getProjectionDespawnCooldownSeconds() {
+        return Math.max(0, config.getInt("projection.despawn-cooldown-seconds", 5));
+    }
+
+    public boolean shouldCleanupOrphanedPhysicalEntitiesOnEnable() {
+        return config.getBoolean("physical-caravan.cleanup-orphaned-entities-on-enable", true);
+    }
+
+    public long getInteractionCooldownMillis() {
+        return Math.max(0L, config.getLong("interaction.cooldown-millis", 500L));
+    }
+
     public String getMessage(String path) {
         return config.getString("messages." + path, "");
     }

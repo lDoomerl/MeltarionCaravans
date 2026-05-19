@@ -93,6 +93,10 @@ public final class CaravanInventoryService {
         storage.deleteInventoryContents(caravanId);
     }
 
+    public boolean hasStoredInventory(UUID caravanId) throws StorageException {
+        return storage.loadInventoryContents(caravanId) != null;
+    }
+
     public void discardOpenInventory(UUID caravanId) {
         openInventories.remove(caravanId);
     }

@@ -2,7 +2,9 @@ package net.meltarion.caravans.service;
 
 import java.time.Instant;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.meltarion.caravans.config.ConfigManager;
@@ -24,6 +26,7 @@ public final class PublicTradeService {
     private final CaravanEntityService caravanEntityService;
     private final TownyIntegrationService townyIntegrationService;
     private final Logger logger;
+    private final Set<UUID> transactionLocks = ConcurrentHashMap.newKeySet();
 
     public PublicTradeService(
         ConfigManager configManager,
@@ -42,18 +45,22 @@ public final class PublicTradeService {
     }
 
     public PublicTradeResult attemptBuyFromCaravan(Player player, CaravanRecord caravan, TradeOperationRecord operation) {
+        if (!transactionLocks.add(caravan.id())) {
+            return failure("public-trade-transaction-failed", caravan, operation);
+        }
         TradeOperationRecord latestOperation = validateCommon(caravan, operation, TradeOperationType.SELL);
-        if (latestOperation == null) {
-            return failure("public-trade-operation-inactive", caravan, operation);
-        }
-        if (!isOnShopPlot(caravan.id())) {
-            return failure("public-trade-shop-plot-required", caravan, latestOperation);
-        }
-
+        ItemStack[] playerSnapshot = null;
+        ItemStack[] caravanSnapshot = null;
         try {
+            if (latestOperation == null) {
+                return failure("public-trade-operation-inactive", caravan, operation);
+            }
+            if (!isOnShopPlot(caravan.id())) {
+                return failure("public-trade-shop-plot-required", caravan, latestOperation);
+            }
             Inventory caravanInventory = inventoryService.getInventory(caravan);
-            ItemStack[] playerSnapshot = cloneContents(player.getInventory());
-            ItemStack[] caravanSnapshot = cloneContents(caravanInventory);
+            playerSnapshot = cloneContents(player.getInventory());
+            caravanSnapshot = cloneContents(caravanInventory);
             Integer reservedSlot = latestOperation.reservedInventorySlot();
             if (reservedSlot == null || reservedSlot < 0 || reservedSlot >= caravanInventory.getSize()) {
                 return failure("public-trade-reserved-slot-invalid", caravan, latestOperation);
@@ -127,29 +134,44 @@ public final class PublicTradeService {
                 ? success("public-trade-stock-depleted", caravan, updatedOperation, remainingForSell(caravan, updatedOperation))
                 : success("public-trade-buy-success", caravan, updatedOperation, remainingForSell(caravan, updatedOperation));
         } catch (Exception exception) {
+            if (playerSnapshot != null && caravanSnapshot != null) {
+                restoreContents(player.getInventory(), playerSnapshot);
+                try {
+                    Inventory caravanInventory = inventoryService.getInventory(caravan);
+                    restoreContents(caravanInventory, caravanSnapshot);
+                    inventoryService.saveInventory(caravan);
+                } catch (Exception restoreException) {
+                    exception.addSuppressed(restoreException);
+                }
+            }
             logger.log(Level.SEVERE, "Failed to complete public SELL transaction for caravan " + caravan.id() + '.', exception);
             return failure("public-trade-transaction-failed", caravan, operation);
+        } finally {
+            transactionLocks.remove(caravan.id());
         }
     }
 
     public PublicTradeResult attemptSellToCaravan(Player player, CaravanRecord caravan, TradeOperationRecord operation) {
+        if (!transactionLocks.add(caravan.id())) {
+            return failure("public-trade-transaction-failed", caravan, operation);
+        }
         TradeOperationRecord latestOperation = validateCommon(caravan, operation, TradeOperationType.BUY);
-        if (latestOperation == null) {
-            return failure("public-trade-operation-inactive", caravan, operation);
-        }
-        if (!isOnShopPlot(caravan.id())) {
-            return failure("public-trade-shop-plot-required", caravan, latestOperation);
-        }
-
-        int remainingWanted = remainingForBuy(latestOperation);
-        if (remainingWanted < latestOperation.amountPerTransaction()) {
-            return failure("public-trade-operation-inactive", caravan, latestOperation);
-        }
-
+        ItemStack[] playerSnapshot = null;
+        ItemStack[] caravanSnapshot = null;
         try {
+            if (latestOperation == null) {
+                return failure("public-trade-operation-inactive", caravan, operation);
+            }
+            if (!isOnShopPlot(caravan.id())) {
+                return failure("public-trade-shop-plot-required", caravan, latestOperation);
+            }
+            int remainingWanted = remainingForBuy(latestOperation);
+            if (remainingWanted < latestOperation.amountPerTransaction()) {
+                return failure("public-trade-operation-inactive", caravan, latestOperation);
+            }
             Inventory caravanInventory = inventoryService.getInventory(caravan);
-            ItemStack[] playerSnapshot = cloneContents(player.getInventory());
-            ItemStack[] caravanSnapshot = cloneContents(caravanInventory);
+            playerSnapshot = cloneContents(player.getInventory());
+            caravanSnapshot = cloneContents(caravanInventory);
             ItemStack operationItem = latestOperation.itemStack().clone();
             operationItem.setAmount(1);
             Material currency = configManager.getCurrencyItem();
@@ -216,9 +238,24 @@ public final class PublicTradeService {
                 ? success("public-trade-order-completed", caravan, updatedOperation, remainingForBuy(updatedOperation))
                 : success("public-trade-sell-success", caravan, updatedOperation, remainingForBuy(updatedOperation));
         } catch (Exception exception) {
+            if (playerSnapshot != null && caravanSnapshot != null) {
+                restoreContents(player.getInventory(), playerSnapshot);
+                try {
+                    Inventory caravanInventory = inventoryService.getInventory(caravan);
+                    restoreContents(caravanInventory, caravanSnapshot);
+                    inventoryService.saveInventory(caravan);
+                } catch (Exception restoreException) {
+                    exception.addSuppressed(restoreException);
+                }
+            }
             logger.log(Level.SEVERE, "Failed to complete public BUY transaction for caravan " + caravan.id() + '.', exception);
             return failure("public-trade-transaction-failed", caravan, operation);
+        } finally {
+            transactionLocks.remove(caravan.id());
         }
+    }
+
+    public void clearPlayerState(UUID playerId) {
     }
 
     private TradeOperationRecord validateCommon(CaravanRecord caravan, TradeOperationRecord operation, TradeOperationType type) {

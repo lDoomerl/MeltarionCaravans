@@ -66,6 +66,9 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
         }
 
         registerCommands();
+        if (caravanEntityService != null) {
+            caravanEntityService.initialize();
+        }
         getServer().getPluginManager().registerEvents(new CaravanInventoryListener(this), this);
         getServer().getPluginManager().registerEvents(new CaravanLicenseListener(this), this);
         getServer().getPluginManager().registerEvents(new CaravanSetupListener(this), this);

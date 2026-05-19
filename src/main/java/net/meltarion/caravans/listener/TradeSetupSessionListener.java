@@ -33,5 +33,6 @@ public final class TradeSetupSessionListener implements Listener {
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         plugin.getTradeSetupSessionService().clearSession(event.getPlayer().getUniqueId());
+        plugin.getPublicTradeService().clearPlayerState(event.getPlayer().getUniqueId());
     }
 }

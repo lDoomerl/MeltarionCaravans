@@ -42,13 +42,13 @@ public final class DeleteSubcommand implements CaravanSubcommand {
             return;
         }
 
+        context.entities().despawnCaravan(lookupResult.caravan().id());
         CaravanMutationResult mutationResult = context.caravans().deleteCaravan(lookupResult.caravan());
         if (!mutationResult.success()) {
             context.messages().send(context.sender(), "storage-error");
             return;
         }
 
-        context.entities().despawnCaravan(lookupResult.caravan().id());
         context.movement().removeRuntimeCaravan(lookupResult.caravan().id());
 
         context.messages().send(context.sender(), "deleted", Map.of(

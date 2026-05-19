@@ -1,6 +1,8 @@
 package net.meltarion.caravans.service;
 
 import java.util.Map;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Level;
@@ -44,6 +46,7 @@ public final class CaravanEntityService {
     }
 
     public synchronized PhysicalSpawnResult spawnCaravan(CaravanRecord caravan, Location baseLocation) {
+        cleanupAllTrackedEntities();
         cleanupInvalidState(caravan.id());
 
         if (!configManager.isPhysicalCaravanEnabled()) {
@@ -113,9 +116,34 @@ public final class CaravanEntityService {
         spawnedCaravans.clear();
     }
 
+    public synchronized void initialize() {
+        cleanupAllTrackedEntities();
+        if (configManager.shouldCleanupOrphanedPhysicalEntitiesOnEnable()) {
+            cleanupOrphanedEntitiesOnEnable();
+        }
+    }
+
     public synchronized boolean isSpawned(UUID caravanId) {
         cleanupInvalidState(caravanId);
         return spawnedCaravans.containsKey(caravanId);
+    }
+
+    public synchronized ProjectionDebugInfo getDebugInfo(UUID caravanId) {
+        cleanupInvalidState(caravanId);
+        SpawnedCaravanEntities entities = spawnedCaravans.get(caravanId);
+        if (entities == null) {
+            return new ProjectionDebugInfo(false, null, false, null, false, null, false);
+        }
+
+        return new ProjectionDebugInfo(
+            true,
+            entities.traderId(),
+            isAlive(entities.traderId()),
+            entities.llamaOneId(),
+            isAlive(entities.llamaOneId()),
+            entities.llamaTwoId(),
+            isAlive(entities.llamaTwoId())
+        );
     }
 
     public synchronized void syncCaravanProjection(UUID caravanId, Location baseLocation) {
@@ -231,6 +259,28 @@ public final class CaravanEntityService {
         }
     }
 
+    public synchronized void cleanupAllTrackedEntities() {
+        List<UUID> caravanIds = new ArrayList<>(spawnedCaravans.keySet());
+        for (UUID caravanId : caravanIds) {
+            cleanupInvalidState(caravanId);
+        }
+    }
+
+    private void cleanupOrphanedEntitiesOnEnable() {
+        int removed = 0;
+        for (World world : Bukkit.getWorlds()) {
+            for (Entity entity : world.getEntities()) {
+                if (findCaravanId(entity) != null) {
+                    entity.remove();
+                    removed++;
+                }
+            }
+        }
+        if (removed > 0) {
+            logger.info("Removed " + removed + " orphaned caravan entities during enable cleanup.");
+        }
+    }
+
     private boolean isAlive(UUID entityId) {
         Entity entity = Bukkit.getEntity(entityId);
         return entity != null && entity.isValid() && !entity.isDead();
@@ -257,6 +307,17 @@ public final class CaravanEntityService {
         UUID traderId,
         UUID llamaOneId,
         UUID llamaTwoId
+    ) {
+    }
+
+    public record ProjectionDebugInfo(
+        boolean tracked,
+        UUID traderId,
+        boolean traderValid,
+        UUID llamaOneId,
+        boolean llamaOneValid,
+        UUID llamaTwoId,
+        boolean llamaTwoValid
     ) {
     }
 }

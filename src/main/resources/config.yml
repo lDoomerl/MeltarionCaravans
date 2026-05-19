@@ -56,11 +56,20 @@ movement:
   adjust-y-to-highest-block: true
   max-y-adjust-per-update: 8
   pause-when-attacked: true
+  attacked-notification-cooldown-seconds: 30
   debug: false
+
+projection:
+  spawn-cooldown-seconds: 5
+  despawn-cooldown-seconds: 5
+
+interaction:
+  cooldown-millis: 500
 
 physical-caravan:
   enabled: true
   despawn-on-plugin-disable: true
+  cleanup-orphaned-entities-on-enable: true
   prevent-duplicate-spawn: true
   spawn-radius: 3
   entity-health:
@@ -187,6 +196,7 @@ messages:
   admin-delete-usage: "&cUsage: /caravan admin delete <id>"
   admin-move-usage: "&cUsage: /caravan admin move <id> <world> <x> <z>"
   admin-position-usage: "&cUsage: /caravan admin position <id>"
+  admin-debug-usage: "&cUsage: /caravan admin debug <id>"
   admin-return-usage: "&cUsage: /caravan admin return <id>"
   admin-givelicense-usage: "&cUsage: /caravan admin givelicense <player> [amount]"
   move-usage: "&cUsage: /caravan move <id> <x> <z>"
@@ -214,6 +224,23 @@ messages:
     - "&7Speed: &f%speed%"
     - "&7ETA: &f%eta%"
     - "&7Physical Projection: &f%physical_spawned%"
+  debug-info:
+    - "&6Caravan Debug"
+    - "&7ID: &f%id%"
+    - "&7Name: &f%name%"
+    - "&7Status: &f%status%"
+    - "&7Virtual: &f%world% @ %x% %y% %z%"
+    - "&7Target: &f%target_x% %target_y% %target_z%"
+    - "&7Speed: &f%speed%"
+    - "&7ETA: &f%eta%"
+    - "&7Physical Flag: &f%physical_spawned%"
+    - "&7Tracked: &f%tracked%"
+    - "&7Trader: &f%trader_id% &7(valid: &f%trader_valid%&7)"
+    - "&7Llama 1: &f%llama_one_id% &7(valid: &f%llama_one_valid%&7)"
+    - "&7Llama 2: &f%llama_two_id% &7(valid: &f%llama_two_valid%&7)"
+    - "&7Home: &f%home_world% @ %home_x% %home_y% %home_z%"
+    - "&7Active Trades: &f%active_trades%"
+    - "&7Inventory Row Exists: &f%inventory_exists%"
   info:
     - "&6Caravan Info"
     - "&7ID: &f%id%"
@@ -242,6 +269,7 @@ messages:
     - "&6/caravan admin despawn <id> &7- Remove a physical caravan"
     - "&6/caravan admin move <id> <world> <x> <z> &7- Start admin movement"
     - "&6/caravan admin position <id> &7- Show virtual caravan position"
+    - "&6/caravan admin debug <id> &7- Show deep runtime debug info"
     - "&6/caravan admin return <id> &7- Send a caravan to its home"
     - "&6/caravan admin trades <id> &7- Open the trade management GUI"
     - "&6/caravan admin sell <id> <slot> <price> &7- Create a SELL operation"

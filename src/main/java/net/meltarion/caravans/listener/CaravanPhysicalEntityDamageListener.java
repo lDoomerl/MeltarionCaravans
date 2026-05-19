@@ -2,6 +2,7 @@ package net.meltarion.caravans.listener;
 
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import net.meltarion.caravans.MeltarionCaravansPlugin;
 import net.meltarion.caravans.model.CaravanRecord;
 import net.meltarion.caravans.model.CaravanStatus;
@@ -17,6 +18,7 @@ import org.bukkit.event.entity.EntityDamageEvent;
 public final class CaravanPhysicalEntityDamageListener implements Listener {
 
     private final MeltarionCaravansPlugin plugin;
+    private final ConcurrentHashMap<UUID, Long> ownerNotificationCooldowns = new ConcurrentHashMap<>();
 
     public CaravanPhysicalEntityDamageListener(MeltarionCaravansPlugin plugin) {
         this.plugin = plugin;
@@ -89,8 +91,16 @@ public final class CaravanPhysicalEntityDamageListener implements Listener {
     }
 
     private void notifyOwner(CaravanRecord caravan) {
+        long now = System.currentTimeMillis();
+        long cooldownMillis = plugin.getConfigManager().getMovementAttackedNotificationCooldownSeconds() * 1000L;
+        Long lastSent = ownerNotificationCooldowns.get(caravan.id());
+        if (lastSent != null && now - lastSent < cooldownMillis) {
+            return;
+        }
+
         Player owner = Bukkit.getPlayer(caravan.ownerId());
         if (owner != null && owner.isOnline()) {
+            ownerNotificationCooldowns.put(caravan.id(), now);
             plugin.getMessageService().send(owner, "physical-owner-notified-attacked", placeholders(caravan, 0));
             if (plugin.getConfigManager().shouldPauseMovementWhenAttacked()) {
                 plugin.getMessageService().send(owner, "movement-paused-attacked", placeholders(caravan, 0));

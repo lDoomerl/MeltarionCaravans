@@ -30,6 +30,8 @@ public final class CaravanMovementService {
     private final Logger logger;
     private final Map<UUID, CaravanRecord> runtimeCaravans = new ConcurrentHashMap<>();
     private final Set<UUID> dirtyCaravans = ConcurrentHashMap.newKeySet();
+    private final Map<UUID, Instant> lastProjectionSpawnAt = new ConcurrentHashMap<>();
+    private final Map<UUID, Instant> lastProjectionDespawnAt = new ConcurrentHashMap<>();
 
     private BukkitTask movementTask;
     private Instant lastPeriodicSaveAt;
@@ -82,6 +84,8 @@ public final class CaravanMovementService {
             }
         }
         saveDirtyCaravans(true);
+        lastProjectionSpawnAt.clear();
+        lastProjectionDespawnAt.clear();
     }
 
     public CaravanRecord getRuntimeCaravan(UUID caravanId) {
@@ -289,12 +293,15 @@ public final class CaravanMovementService {
     public void removeRuntimeCaravan(UUID caravanId) {
         runtimeCaravans.remove(caravanId);
         dirtyCaravans.remove(caravanId);
+        lastProjectionSpawnAt.remove(caravanId);
+        lastProjectionDespawnAt.remove(caravanId);
     }
 
     private void tick() {
         Instant now = Instant.now();
         double deltaSeconds = configManager.getMovementTickIntervalSeconds();
         List<CaravanRecord> snapshot = new ArrayList<>(runtimeCaravans.values());
+        caravanEntityService.cleanupAllTrackedEntities();
 
         for (CaravanRecord caravan : snapshot) {
             CaravanRecord updated = caravan;
@@ -375,7 +382,7 @@ public final class CaravanMovementService {
             caravan.movementStartedAt(),
             now,
             caravan.speedBlocksPerSecond(),
-            null,
+            0,
             caravan.physicalSpawned(),
             now
         );
@@ -411,9 +418,10 @@ public final class CaravanMovementService {
             .anyMatch(player -> player.getLocation().distanceSquared(location) <= despawnDistanceSquared);
 
         boolean actuallySpawned = caravanEntityService.isSpawned(caravan.id());
-        if (hasNearbyPlayers && chunkLoaded && !actuallySpawned) {
+        if (hasNearbyPlayers && chunkLoaded && !actuallySpawned && canSpawnProjection(caravan.id(), now)) {
             PhysicalSpawnResult result = caravanEntityService.spawnCaravan(caravan, location);
             if (result.success()) {
+                lastProjectionSpawnAt.put(caravan.id(), now);
                 CaravanRecord updated = caravan.withPhysicalSpawned(true, now);
                 if (configManager.isMovementDebugEnabled()) {
                     Player owner = Bukkit.getPlayer(updated.ownerId());
@@ -425,8 +433,9 @@ public final class CaravanMovementService {
             }
         }
 
-        if (actuallySpawned && !hasDistantPlayers) {
+        if (actuallySpawned && !hasDistantPlayers && canDespawnProjection(caravan.id(), now)) {
             caravanEntityService.despawnCaravan(caravan.id());
+            lastProjectionDespawnAt.put(caravan.id(), now);
             CaravanRecord updated = caravan.withPhysicalSpawned(false, now);
             if (configManager.isMovementDebugEnabled()) {
                 Player owner = Bukkit.getPlayer(updated.ownerId());
@@ -437,7 +446,7 @@ public final class CaravanMovementService {
             return updated;
         }
 
-        if (actuallySpawned && hasDistantPlayers) {
+        if (actuallySpawned && hasDistantPlayers && chunkLoaded) {
             caravanEntityService.syncCaravanProjection(caravan.id(), location);
             if (!caravan.physicalSpawned()) {
                 return caravan.withPhysicalSpawned(true, now);
@@ -449,6 +458,18 @@ public final class CaravanMovementService {
         }
 
         return caravan;
+    }
+
+    private boolean canSpawnProjection(UUID caravanId, Instant now) {
+        Instant lastDespawn = lastProjectionDespawnAt.get(caravanId);
+        return lastDespawn == null
+            || Duration.between(lastDespawn, now).getSeconds() >= configManager.getProjectionSpawnCooldownSeconds();
+    }
+
+    private boolean canDespawnProjection(UUID caravanId, Instant now) {
+        Instant lastSpawn = lastProjectionSpawnAt.get(caravanId);
+        return lastSpawn == null
+            || Duration.between(lastSpawn, now).getSeconds() >= configManager.getProjectionDespawnCooldownSeconds();
     }
 
     private double resolveTargetY(World world, double targetX, double targetZ, double fallbackY) {
@@ -492,7 +513,7 @@ public final class CaravanMovementService {
             return null;
         }
         double distance = new Vector(targetX - currentX, targetY - currentY, targetZ - currentZ).length();
-        return (int) Math.ceil(distance / speed);
+        return Math.max(0, (int) Math.ceil(distance / speed));
     }
 
     private boolean persistRuntime(CaravanRecord caravan) {

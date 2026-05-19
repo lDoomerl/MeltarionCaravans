@@ -51,6 +51,7 @@ public final class AdminSubcommand implements CaravanSubcommand {
             case "despawn" -> handleDespawn(context);
             case "move" -> handleMove(context);
             case "position" -> handlePosition(context);
+            case "debug" -> handleDebug(context);
             case "return" -> handleReturn(context);
             case "trades" -> handleTrades(context);
             case "sell" -> handleSell(context);
@@ -65,7 +66,7 @@ public final class AdminSubcommand implements CaravanSubcommand {
     @Override
     public List<String> tabComplete(CommandContext context) {
         if (context.args().length == 1) {
-            return List.of("list", "info", "open", "setup", "spawn", "despawn", "move", "position", "return", "trades", "sell", "buy", "delete", "reload", "givelicense").stream()
+            return List.of("list", "info", "open", "setup", "spawn", "despawn", "move", "position", "debug", "return", "trades", "sell", "buy", "delete", "reload", "givelicense").stream()
                 .filter(option -> option.startsWith(context.args()[0].toLowerCase()))
                 .toList();
         }
@@ -140,13 +141,13 @@ public final class AdminSubcommand implements CaravanSubcommand {
             return;
         }
 
+        context.entities().despawnCaravan(lookupResult.caravan().id());
         CaravanMutationResult mutationResult = context.caravans().deleteCaravan(lookupResult.caravan());
         if (!mutationResult.success()) {
             context.messages().send(context.sender(), "storage-error");
             return;
         }
 
-        context.entities().despawnCaravan(lookupResult.caravan().id());
         context.movement().removeRuntimeCaravan(lookupResult.caravan().id());
 
         context.messages().send(context.sender(), "deleted", Map.of(
@@ -308,6 +309,60 @@ public final class AdminSubcommand implements CaravanSubcommand {
         }
 
         context.messages().sendList(context.sender(), "movement-position-info", movementPlaceholders(context, runtime));
+    }
+
+    private void handleDebug(CommandContext context) {
+        if (context.args().length < 3) {
+            context.messages().send(context.sender(), "admin-debug-usage");
+            return;
+        }
+
+        CaravanRecord caravan = resolveAdminCaravan(context, context.args()[2]);
+        if (caravan == null) {
+            return;
+        }
+
+        CaravanRecord runtime = context.movement().getRuntimeCaravan(caravan.id());
+        CaravanRecord effective = runtime == null ? caravan : runtime;
+        var debugInfo = context.entities().getDebugInfo(caravan.id());
+        int activeTrades = context.trades().getActiveOperations(caravan.id()).size();
+        boolean inventoryExists;
+        try {
+            inventoryExists = context.inventories().hasStoredInventory(caravan.id());
+        } catch (StorageException exception) {
+            context.plugin().getLogger().log(java.util.logging.Level.SEVERE, "Failed to inspect caravan inventory row for " + caravan.id() + '.', exception);
+            context.messages().send(context.sender(), "storage-error");
+            return;
+        }
+
+        context.messages().sendList(context.sender(), "debug-info", Map.ofEntries(
+            Map.entry("id", context.caravans().getShortId(effective)),
+            Map.entry("name", effective.name()),
+            Map.entry("status", effective.status().name()),
+            Map.entry("world", effective.worldName() == null ? "unknown" : effective.worldName()),
+            Map.entry("x", effective.virtualX() == null ? "?" : String.format(java.util.Locale.US, "%.1f", effective.virtualX())),
+            Map.entry("y", effective.virtualY() == null ? "?" : String.format(java.util.Locale.US, "%.1f", effective.virtualY())),
+            Map.entry("z", effective.virtualZ() == null ? "?" : String.format(java.util.Locale.US, "%.1f", effective.virtualZ())),
+            Map.entry("target_x", effective.targetX() == null ? "?" : String.format(java.util.Locale.US, "%.1f", effective.targetX())),
+            Map.entry("target_y", effective.targetY() == null ? "?" : String.format(java.util.Locale.US, "%.1f", effective.targetY())),
+            Map.entry("target_z", effective.targetZ() == null ? "?" : String.format(java.util.Locale.US, "%.1f", effective.targetZ())),
+            Map.entry("speed", String.format(java.util.Locale.US, "%.2f", effective.speedBlocksPerSecond())),
+            Map.entry("eta", effective.etaSeconds() == null ? "?" : String.valueOf(effective.etaSeconds())),
+            Map.entry("physical_spawned", String.valueOf(effective.physicalSpawned())),
+            Map.entry("tracked", String.valueOf(debugInfo.tracked())),
+            Map.entry("trader_id", debugInfo.traderId() == null ? "-" : debugInfo.traderId().toString()),
+            Map.entry("trader_valid", String.valueOf(debugInfo.traderValid())),
+            Map.entry("llama_one_id", debugInfo.llamaOneId() == null ? "-" : debugInfo.llamaOneId().toString()),
+            Map.entry("llama_one_valid", String.valueOf(debugInfo.llamaOneValid())),
+            Map.entry("llama_two_id", debugInfo.llamaTwoId() == null ? "-" : debugInfo.llamaTwoId().toString()),
+            Map.entry("llama_two_valid", String.valueOf(debugInfo.llamaTwoValid())),
+            Map.entry("home_world", effective.homeWorldName() == null ? "-" : effective.homeWorldName()),
+            Map.entry("home_x", effective.homeX() == null ? "?" : String.format(java.util.Locale.US, "%.1f", effective.homeX())),
+            Map.entry("home_y", effective.homeY() == null ? "?" : String.format(java.util.Locale.US, "%.1f", effective.homeY())),
+            Map.entry("home_z", effective.homeZ() == null ? "?" : String.format(java.util.Locale.US, "%.1f", effective.homeZ())),
+            Map.entry("active_trades", String.valueOf(activeTrades)),
+            Map.entry("inventory_exists", String.valueOf(inventoryExists))
+        ));
     }
 
     private void handleSetup(CommandContext context) {
