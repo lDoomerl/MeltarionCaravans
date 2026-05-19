@@ -16,8 +16,11 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import net.meltarion.caravans.model.CaravanRecord;
 import net.meltarion.caravans.model.CaravanStatus;
+import net.meltarion.caravans.model.TradeOperationRecord;
+import net.meltarion.caravans.model.TradeOperationType;
+import net.meltarion.caravans.util.ItemStackSerializationUtil;
 
-public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInventoryStorage {
+public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInventoryStorage, TradeOperationStorage {
 
     private static final String CREATE_CARAVANS_TABLE = """
         CREATE TABLE IF NOT EXISTS caravans (
@@ -45,6 +48,39 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
             updated_at TEXT NOT NULL,
             FOREIGN KEY (caravan_id) REFERENCES caravans(id) ON DELETE CASCADE
         )
+        """;
+
+    private static final String CREATE_TRADE_OPERATIONS_TABLE = """
+        CREATE TABLE IF NOT EXISTS trade_operations (
+            id TEXT PRIMARY KEY,
+            caravan_id TEXT NOT NULL,
+            type TEXT NOT NULL,
+            item_stack TEXT NOT NULL,
+            amount_per_transaction INTEGER NOT NULL,
+            price_currency_amount INTEGER NOT NULL,
+            max_total_amount INTEGER,
+            fulfilled_amount INTEGER NOT NULL DEFAULT 0,
+            reserved_inventory_slot INTEGER,
+            active INTEGER NOT NULL DEFAULT 1,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (caravan_id) REFERENCES caravans(id) ON DELETE CASCADE
+        )
+        """;
+
+    private static final String CREATE_TRADE_CARAVAN_INDEX = """
+        CREATE INDEX IF NOT EXISTS idx_trade_operations_caravan_id
+        ON trade_operations (caravan_id)
+        """;
+
+    private static final String CREATE_TRADE_TYPE_INDEX = """
+        CREATE INDEX IF NOT EXISTS idx_trade_operations_type
+        ON trade_operations (type)
+        """;
+
+    private static final String CREATE_TRADE_ACTIVE_INDEX = """
+        CREATE INDEX IF NOT EXISTS idx_trade_operations_active
+        ON trade_operations (active)
         """;
 
     private static final String SELECT_ALL_CARAVANS = """
@@ -88,6 +124,36 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
         WHERE caravan_id = ?
         """;
 
+    private static final String SELECT_ALL_TRADE_OPERATIONS = """
+        SELECT id, caravan_id, type, item_stack, amount_per_transaction, price_currency_amount,
+               max_total_amount, fulfilled_amount, reserved_inventory_slot, active, created_at, updated_at
+        FROM trade_operations
+        ORDER BY created_at ASC
+        """;
+
+    private static final String INSERT_TRADE_OPERATION = """
+        INSERT INTO trade_operations (
+            id, caravan_id, type, item_stack, amount_per_transaction, price_currency_amount,
+            max_total_amount, fulfilled_amount, reserved_inventory_slot, active, created_at, updated_at
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        """;
+
+    private static final String UPDATE_TRADE_OPERATION_ACTIVE = """
+        UPDATE trade_operations
+        SET active = ?, updated_at = ?
+        WHERE id = ?
+        """;
+
+    private static final String DELETE_TRADE_OPERATION = """
+        DELETE FROM trade_operations
+        WHERE id = ?
+        """;
+
+    private static final String DELETE_TRADE_OPERATIONS_BY_CARAVAN = """
+        DELETE FROM trade_operations
+        WHERE caravan_id = ?
+        """;
+
     private final Path databasePath;
     private final Logger logger;
 
@@ -112,6 +178,10 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
                 statement.executeUpdate(CREATE_CARAVANS_TABLE);
                 statement.executeUpdate(CREATE_OWNER_INDEX);
                 statement.executeUpdate(CREATE_CARAVAN_INVENTORIES_TABLE);
+                statement.executeUpdate(CREATE_TRADE_OPERATIONS_TABLE);
+                statement.executeUpdate(CREATE_TRADE_CARAVAN_INDEX);
+                statement.executeUpdate(CREATE_TRADE_TYPE_INDEX);
+                statement.executeUpdate(CREATE_TRADE_ACTIVE_INDEX);
             }
 
             logger.info("Initialized SQLite caravan storage at " + databasePath.toAbsolutePath() + '.');
@@ -199,9 +269,13 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
             connection.setAutoCommit(false);
 
             try (PreparedStatement deleteInventory = connection.prepareStatement(DELETE_CARAVAN_INVENTORY);
+                 PreparedStatement deleteTradeOperations = connection.prepareStatement(DELETE_TRADE_OPERATIONS_BY_CARAVAN);
                  PreparedStatement deleteCaravan = connection.prepareStatement(DELETE_CARAVAN)) {
                 deleteInventory.setString(1, caravanId.toString());
                 deleteInventory.executeUpdate();
+
+                deleteTradeOperations.setString(1, caravanId.toString());
+                deleteTradeOperations.executeUpdate();
 
                 deleteCaravan.setString(1, caravanId.toString());
                 deleteCaravan.executeUpdate();
@@ -267,6 +341,96 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
     }
 
     @Override
+    public synchronized List<TradeOperationRecord> loadAllTradeOperations() throws StorageException {
+        ensureInitialized();
+
+        List<TradeOperationRecord> tradeOperations = new ArrayList<>();
+        try (PreparedStatement statement = connection.prepareStatement(SELECT_ALL_TRADE_OPERATIONS);
+             ResultSet resultSet = statement.executeQuery()) {
+            while (resultSet.next()) {
+                TradeOperationRecord tradeOperation = mapTradeOperation(resultSet);
+                if (tradeOperation != null) {
+                    tradeOperations.add(tradeOperation);
+                }
+            }
+        } catch (SQLException exception) {
+            throw new StorageException("Failed to load trade operations from SQLite.", exception);
+        }
+
+        logger.info("Loaded " + tradeOperations.size() + " trade operations from SQLite.");
+        return tradeOperations;
+    }
+
+    @Override
+    public synchronized void insertTradeOperation(TradeOperationRecord tradeOperation) throws StorageException {
+        ensureInitialized();
+
+        try (PreparedStatement statement = connection.prepareStatement(INSERT_TRADE_OPERATION)) {
+            statement.setString(1, tradeOperation.id().toString());
+            statement.setString(2, tradeOperation.caravanId().toString());
+            statement.setString(3, tradeOperation.type().name());
+            statement.setString(4, ItemStackSerializationUtil.serializeItemStack(tradeOperation.itemStack()));
+            statement.setInt(5, tradeOperation.amountPerTransaction());
+            statement.setInt(6, tradeOperation.priceCurrencyAmount());
+            if (tradeOperation.maxTotalAmount() == null) {
+                statement.setNull(7, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(7, tradeOperation.maxTotalAmount());
+            }
+            statement.setInt(8, tradeOperation.fulfilledAmount());
+            if (tradeOperation.reservedInventorySlot() == null) {
+                statement.setNull(9, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(9, tradeOperation.reservedInventorySlot());
+            }
+            statement.setInt(10, tradeOperation.active() ? 1 : 0);
+            statement.setString(11, tradeOperation.createdAt().toString());
+            statement.setString(12, tradeOperation.updatedAt().toString());
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new StorageException("Failed to insert trade operation into SQLite.", exception);
+        }
+    }
+
+    @Override
+    public synchronized void updateTradeOperationActiveState(UUID tradeOperationId, boolean active, String updatedAt) throws StorageException {
+        ensureInitialized();
+
+        try (PreparedStatement statement = connection.prepareStatement(UPDATE_TRADE_OPERATION_ACTIVE)) {
+            statement.setInt(1, active ? 1 : 0);
+            statement.setString(2, updatedAt);
+            statement.setString(3, tradeOperationId.toString());
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new StorageException("Failed to update trade operation in SQLite.", exception);
+        }
+    }
+
+    @Override
+    public synchronized void deleteTradeOperation(UUID tradeOperationId) throws StorageException {
+        ensureInitialized();
+
+        try (PreparedStatement statement = connection.prepareStatement(DELETE_TRADE_OPERATION)) {
+            statement.setString(1, tradeOperationId.toString());
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new StorageException("Failed to delete trade operation from SQLite.", exception);
+        }
+    }
+
+    @Override
+    public synchronized void deleteTradeOperationsByCaravan(UUID caravanId) throws StorageException {
+        ensureInitialized();
+
+        try (PreparedStatement statement = connection.prepareStatement(DELETE_TRADE_OPERATIONS_BY_CARAVAN)) {
+            statement.setString(1, caravanId.toString());
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new StorageException("Failed to delete caravan trade operations from SQLite.", exception);
+        }
+    }
+
+    @Override
     public synchronized void close() throws StorageException {
         if (connection == null) {
             return;
@@ -297,6 +461,34 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
             );
         } catch (IllegalArgumentException exception) {
             logger.log(Level.WARNING, "Skipping invalid caravan row while reading SQLite data.", exception);
+            return null;
+        }
+    }
+
+    private TradeOperationRecord mapTradeOperation(ResultSet resultSet) throws SQLException {
+        try {
+            int reservedSlot = resultSet.getInt("reserved_inventory_slot");
+            Integer reservedInventorySlot = resultSet.wasNull() ? null : reservedSlot;
+
+            int maxTotal = resultSet.getInt("max_total_amount");
+            Integer maxTotalAmount = resultSet.wasNull() ? null : maxTotal;
+
+            return new TradeOperationRecord(
+                UUID.fromString(resultSet.getString("id")),
+                UUID.fromString(resultSet.getString("caravan_id")),
+                TradeOperationType.valueOf(resultSet.getString("type")),
+                ItemStackSerializationUtil.deserializeItemStack(resultSet.getString("item_stack")),
+                resultSet.getInt("amount_per_transaction"),
+                resultSet.getInt("price_currency_amount"),
+                maxTotalAmount,
+                resultSet.getInt("fulfilled_amount"),
+                reservedInventorySlot,
+                resultSet.getInt("active") == 1,
+                Instant.parse(resultSet.getString("created_at")),
+                Instant.parse(resultSet.getString("updated_at"))
+            );
+        } catch (IllegalArgumentException | StorageException exception) {
+            logger.log(Level.WARNING, "Skipping invalid trade operation row while reading SQLite data.", exception);
             return null;
         }
     }

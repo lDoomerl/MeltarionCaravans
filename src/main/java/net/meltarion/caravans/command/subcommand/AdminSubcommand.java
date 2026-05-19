@@ -5,9 +5,12 @@ import java.util.Map;
 import net.meltarion.caravans.command.CaravanSubcommand;
 import net.meltarion.caravans.command.CommandContext;
 import net.meltarion.caravans.model.CaravanRecord;
+import net.meltarion.caravans.model.TradeOperationType;
 import net.meltarion.caravans.service.CaravanLookupResult;
 import net.meltarion.caravans.service.CaravanMutationResult;
+import net.meltarion.caravans.service.TradeOperationCreateResult;
 import net.meltarion.caravans.storage.StorageException;
+import org.bukkit.Material;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -40,6 +43,9 @@ public final class AdminSubcommand implements CaravanSubcommand {
             case "list" -> handleList(context);
             case "info" -> handleInfo(context);
             case "open" -> handleOpen(context);
+            case "trades" -> handleTrades(context);
+            case "sell" -> handleSell(context);
+            case "buy" -> handleBuy(context);
             case "delete" -> handleDelete(context);
             case "reload" -> handleReload(context);
             case "givelicense" -> handleGiveLicense(context);
@@ -50,7 +56,7 @@ public final class AdminSubcommand implements CaravanSubcommand {
     @Override
     public List<String> tabComplete(CommandContext context) {
         if (context.args().length == 1) {
-            return List.of("list", "info", "open", "delete", "reload", "givelicense").stream()
+            return List.of("list", "info", "open", "trades", "sell", "buy", "delete", "reload", "givelicense").stream()
                 .filter(option -> option.startsWith(context.args()[0].toLowerCase()))
                 .toList();
         }
@@ -137,6 +143,87 @@ public final class AdminSubcommand implements CaravanSubcommand {
         ));
     }
 
+    private void handleTrades(CommandContext context) {
+        if (!(context.sender() instanceof Player player)) {
+            context.messages().send(context.sender(), "admin-open-only");
+            return;
+        }
+        if (context.args().length < 3) {
+            context.messages().send(context.sender(), "admin-trades-usage");
+            return;
+        }
+
+        CaravanRecord caravan = resolveAdminCaravan(context, context.args()[2]);
+        if (caravan == null) {
+            return;
+        }
+
+        context.trades().openTradeManagementInventory(player, caravan);
+        context.messages().send(context.sender(), "trade-management-opened", Map.of(
+            "id", context.caravans().getShortId(caravan),
+            "name", caravan.name()
+        ));
+    }
+
+    private void handleSell(CommandContext context) {
+        if (context.args().length < 5) {
+            context.messages().send(context.sender(), "admin-sell-usage");
+            return;
+        }
+
+        CaravanRecord caravan = resolveAdminCaravan(context, context.args()[2]);
+        if (caravan == null) {
+            return;
+        }
+
+        int slot;
+        int price;
+        try {
+            slot = Integer.parseInt(context.args()[3]);
+            price = Integer.parseInt(context.args()[4]);
+        } catch (NumberFormatException exception) {
+            context.messages().send(context.sender(), "trade-invalid-amount");
+            return;
+        }
+
+        TradeOperationCreateResult result = context.trades().createSellOperation(caravan, slot, price);
+        handleTradeCreateResult(context, result, caravan);
+    }
+
+    private void handleBuy(CommandContext context) {
+        if (context.args().length < 7) {
+            context.messages().send(context.sender(), "admin-buy-usage");
+            return;
+        }
+
+        CaravanRecord caravan = resolveAdminCaravan(context, context.args()[2]);
+        if (caravan == null) {
+            return;
+        }
+
+        Material material = Material.matchMaterial(context.args()[3]);
+        int amountPerTransaction;
+        int price;
+        int maxTotal;
+        try {
+            amountPerTransaction = Integer.parseInt(context.args()[4]);
+            price = Integer.parseInt(context.args()[5]);
+            maxTotal = Integer.parseInt(context.args()[6]);
+        } catch (NumberFormatException exception) {
+            context.messages().send(context.sender(), "trade-invalid-amount");
+            return;
+        }
+
+        TradeOperationCreateResult result = context.trades().createBuyOperation(
+            caravan,
+            material,
+            amountPerTransaction,
+            price,
+            maxTotal
+        );
+        handleTradeCreateResult(context, result, caravan);
+    }
+
     private void handleOpen(CommandContext context) {
         if (!(context.sender() instanceof Player player)) {
             context.messages().send(context.sender(), "admin-open-only");
@@ -210,5 +297,44 @@ public final class AdminSubcommand implements CaravanSubcommand {
             "amount", String.valueOf(amount)
         ));
         context.messages().send(target, "license-received", Map.of("amount", String.valueOf(amount)));
+    }
+
+    private CaravanRecord resolveAdminCaravan(CommandContext context, String reference) {
+        CaravanLookupResult result = context.caravans().findCaravan(reference);
+        if (!result.success()) {
+            if (result.failureReason() == CaravanLookupResult.FailureReason.AMBIGUOUS) {
+                context.messages().send(context.sender(), "ambiguous-id");
+            } else {
+                context.messages().send(context.sender(), "caravan-not-found");
+            }
+            return null;
+        }
+        return result.caravan();
+    }
+
+    private void handleTradeCreateResult(CommandContext context, TradeOperationCreateResult result, CaravanRecord caravan) {
+        if (!result.success()) {
+            switch (result.failureReason()) {
+                case INVALID_PRICE -> context.messages().send(context.sender(), "trade-invalid-price");
+                case INVALID_AMOUNT -> context.messages().send(context.sender(), "trade-invalid-amount");
+                case INVALID_MATERIAL -> context.messages().send(context.sender(), "trade-invalid-material");
+                case EMPTY_SLOT -> context.messages().send(context.sender(), "trade-empty-slot");
+                case DUPLICATE_SLOT -> context.messages().send(context.sender(), "trade-duplicate-slot");
+                case TRADE_NOT_FOUND, STORAGE_ERROR -> context.messages().send(context.sender(), "storage-error");
+            }
+            return;
+        }
+
+        if (result.tradeOperation().type() == TradeOperationType.SELL) {
+            context.messages().send(context.sender(), "trade-created-sell", Map.of(
+                "id", context.caravans().getShortId(caravan),
+                "name", caravan.name()
+            ));
+        } else {
+            context.messages().send(context.sender(), "trade-created-buy", Map.of(
+                "id", context.caravans().getShortId(caravan),
+                "name", caravan.name()
+            ));
+        }
     }
 }

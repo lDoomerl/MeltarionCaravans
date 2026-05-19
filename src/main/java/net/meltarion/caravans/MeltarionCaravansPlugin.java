@@ -11,10 +11,12 @@ import net.meltarion.caravans.service.CaravanService;
 import net.meltarion.caravans.service.CaravanLicenseService;
 import net.meltarion.caravans.service.MessageService;
 import net.meltarion.caravans.service.PersistentCaravanService;
+import net.meltarion.caravans.service.TradeOperationService;
 import net.meltarion.caravans.storage.CaravanInventoryStorage;
 import net.meltarion.caravans.storage.CaravanStorage;
 import net.meltarion.caravans.storage.SQLiteCaravanStorage;
 import net.meltarion.caravans.storage.StorageException;
+import net.meltarion.caravans.storage.TradeOperationStorage;
 import org.bukkit.command.PluginCommand;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -24,6 +26,7 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
     private MessageService messageService;
     private CaravanLicenseService licenseService;
     private CaravanInventoryService inventoryService;
+    private TradeOperationService tradeOperationService;
     private CaravanStorage caravanStorage;
     private CaravanService caravanService;
 
@@ -89,17 +92,24 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
         return inventoryService;
     }
 
+    public TradeOperationService getTradeOperationService() {
+        return tradeOperationService;
+    }
+
     private void initializeStorage() throws StorageException {
         Path databasePath = getDataFolder().toPath().resolve("caravans.db");
         SQLiteCaravanStorage storage = new SQLiteCaravanStorage(databasePath, getLogger());
         this.caravanStorage = storage;
         caravanStorage.initialize();
         this.inventoryService = new CaravanInventoryService(configManager, (CaravanInventoryStorage) storage, getLogger());
+        this.tradeOperationService = new TradeOperationService(configManager, inventoryService, (TradeOperationStorage) storage, getLogger());
+        tradeOperationService.loadTradeOperations();
 
         PersistentCaravanService persistentCaravanService = new PersistentCaravanService(
             configManager,
             caravanStorage,
             inventoryService,
+            tradeOperationService,
             licenseService,
             getLogger()
         );

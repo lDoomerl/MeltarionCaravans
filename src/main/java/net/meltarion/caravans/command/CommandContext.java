@@ -6,6 +6,7 @@ import net.meltarion.caravans.service.CaravanInventoryService;
 import net.meltarion.caravans.service.CaravanService;
 import net.meltarion.caravans.service.CaravanLicenseService;
 import net.meltarion.caravans.service.MessageService;
+import net.meltarion.caravans.service.TradeOperationService;
 import org.bukkit.command.CommandSender;
 
 public record CommandContext(
@@ -28,6 +29,10 @@ public record CommandContext(
 
     public CaravanInventoryService inventories() {
         return plugin.getInventoryService();
+    }
+
+    public TradeOperationService trades() {
+        return plugin.getTradeOperationService();
     }
 
     public ConfigManager config() {

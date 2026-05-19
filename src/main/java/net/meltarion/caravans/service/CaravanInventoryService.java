@@ -1,10 +1,6 @@
 package net.meltarion.caravans.service;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.time.Instant;
-import java.util.Base64;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
@@ -16,12 +12,11 @@ import net.meltarion.caravans.inventory.CaravanInventoryHolder;
 import net.meltarion.caravans.model.CaravanRecord;
 import net.meltarion.caravans.storage.CaravanInventoryStorage;
 import net.meltarion.caravans.storage.StorageException;
+import net.meltarion.caravans.util.ItemStackSerializationUtil;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.util.io.BukkitObjectInputStream;
-import org.bukkit.util.io.BukkitObjectOutputStream;
 
 public final class CaravanInventoryService {
 
@@ -40,9 +35,9 @@ public final class CaravanInventoryService {
 
     public void initializeInventory(CaravanRecord caravan) throws StorageException {
         if (storage.loadInventoryContents(caravan.id()) == null) {
-            storage.saveInventoryContents(
+                storage.saveInventoryContents(
                 caravan.id(),
-                serializeContents(new ItemStack[configManager.getCaravanInventorySize()]),
+                ItemStackSerializationUtil.serializeItemStacks(new ItemStack[configManager.getCaravanInventorySize()]),
                 Instant.now().toString()
             );
         }
@@ -90,6 +85,20 @@ public final class CaravanInventoryService {
         openInventories.remove(caravanId);
     }
 
+    public ItemStack getItemInSlot(CaravanRecord caravan, int slot) throws StorageException {
+        Inventory inventory = openInventories.get(caravan.id());
+        if (inventory == null) {
+            inventory = loadInventory(caravan);
+        }
+
+        if (slot < 0 || slot >= inventory.getSize()) {
+            return null;
+        }
+
+        ItemStack itemStack = inventory.getItem(slot);
+        return itemStack == null ? null : itemStack.clone();
+    }
+
     private Inventory loadInventory(CaravanRecord caravan) throws StorageException {
         String serializedContents = storage.loadInventoryContents(caravan.id());
         if (serializedContents == null) {
@@ -123,40 +132,15 @@ public final class CaravanInventoryService {
 
         storage.saveInventoryContents(
             holder.getCaravanId(),
-            serializeContents(inventory.getContents()),
+            ItemStackSerializationUtil.serializeItemStacks(inventory.getContents()),
             Instant.now().toString()
         );
-    }
-
-    private String serializeContents(ItemStack[] contents) throws StorageException {
-        try (ByteArrayOutputStream byteStream = new ByteArrayOutputStream();
-             BukkitObjectOutputStream outputStream = new BukkitObjectOutputStream(byteStream)) {
-            outputStream.writeInt(contents.length);
-            for (ItemStack itemStack : contents) {
-                outputStream.writeObject(itemStack);
-            }
-            outputStream.flush();
-            return Base64.getEncoder().encodeToString(byteStream.toByteArray());
-        } catch (IOException exception) {
-            throw new StorageException("Failed to serialize caravan inventory.", exception);
-        }
     }
 
     private ItemStack[] deserializeContents(String serializedContents) throws StorageException {
         if (serializedContents == null || serializedContents.isBlank()) {
             return new ItemStack[configManager.getCaravanInventorySize()];
         }
-
-        try (ByteArrayInputStream byteStream = new ByteArrayInputStream(Base64.getDecoder().decode(serializedContents));
-             BukkitObjectInputStream inputStream = new BukkitObjectInputStream(byteStream)) {
-            int size = inputStream.readInt();
-            ItemStack[] contents = new ItemStack[size];
-            for (int index = 0; index < size; index++) {
-                contents[index] = (ItemStack) inputStream.readObject();
-            }
-            return contents;
-        } catch (IOException | ClassNotFoundException exception) {
-            throw new StorageException("Failed to deserialize caravan inventory.", exception);
-        }
+        return ItemStackSerializationUtil.deserializeItemStacks(serializedContents);
     }
 }

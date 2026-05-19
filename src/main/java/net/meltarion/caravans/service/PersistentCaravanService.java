@@ -26,6 +26,7 @@ public final class PersistentCaravanService implements CaravanService {
     private final ConfigManager configManager;
     private final CaravanStorage storage;
     private final CaravanInventoryService inventoryService;
+    private final TradeOperationService tradeOperationService;
     private final CaravanLicenseService caravanLicenseService;
     private final Logger logger;
     private final Map<UUID, List<CaravanRecord>> caravansByOwner = new ConcurrentHashMap<>();
@@ -34,12 +35,14 @@ public final class PersistentCaravanService implements CaravanService {
         ConfigManager configManager,
         CaravanStorage storage,
         CaravanInventoryService inventoryService,
+        TradeOperationService tradeOperationService,
         CaravanLicenseService caravanLicenseService,
         Logger logger
     ) {
         this.configManager = configManager;
         this.storage = storage;
         this.inventoryService = inventoryService;
+        this.tradeOperationService = tradeOperationService;
         this.caravanLicenseService = caravanLicenseService;
         this.logger = logger;
     }
@@ -152,6 +155,7 @@ public final class PersistentCaravanService implements CaravanService {
         try {
             storage.deleteCaravanData(caravan.id());
             inventoryService.discardOpenInventory(caravan.id());
+            tradeOperationService.discardCaravanState(caravan.id());
         } catch (StorageException exception) {
             logger.log(Level.SEVERE, "Failed to delete caravan " + caravan.id() + '.', exception);
             return CaravanMutationResult.failure(CaravanMutationResult.FailureReason.STORAGE_ERROR);
