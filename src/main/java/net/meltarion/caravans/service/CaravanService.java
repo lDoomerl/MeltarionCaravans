@@ -25,6 +25,8 @@ public interface CaravanService {
 
     CaravanMutationResult deleteCaravan(CaravanRecord caravan);
 
+    CaravanMutationResult updateCaravanHealthAndStatus(CaravanRecord caravan, int hp, net.meltarion.caravans.model.CaravanStatus status);
+
     boolean caravanExists(UUID caravanId);
 
     int getCaravanLimit(Player player);

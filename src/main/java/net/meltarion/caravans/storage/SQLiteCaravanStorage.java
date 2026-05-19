@@ -105,6 +105,12 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
         WHERE id = ?
         """;
 
+    private static final String UPDATE_CARAVAN_STATE = """
+        UPDATE caravans
+        SET status = ?, hp = ?, updated_at = ?
+        WHERE id = ?
+        """;
+
     private static final String DELETE_CARAVAN_INVENTORY = """
         DELETE FROM caravan_inventories
         WHERE caravan_id = ?
@@ -256,6 +262,21 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new StorageException("Failed to delete caravan from SQLite.", exception);
+        }
+    }
+
+    @Override
+    public synchronized void updateCaravanState(UUID caravanId, String status, int hp, String updatedAt) throws StorageException {
+        ensureInitialized();
+
+        try (PreparedStatement statement = connection.prepareStatement(UPDATE_CARAVAN_STATE)) {
+            statement.setString(1, status);
+            statement.setInt(2, hp);
+            statement.setString(3, updatedAt);
+            statement.setString(4, caravanId.toString());
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new StorageException("Failed to update caravan state in SQLite.", exception);
         }
     }
 

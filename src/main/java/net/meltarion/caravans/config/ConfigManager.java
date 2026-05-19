@@ -140,6 +140,58 @@ public final class ConfigManager {
             .collect(Collectors.toUnmodifiableSet());
     }
 
+    public boolean isPhysicalCaravanEnabled() {
+        return config.getBoolean("physical-caravan.enabled", true);
+    }
+
+    public boolean shouldDespawnPhysicalCaravansOnDisable() {
+        return config.getBoolean("physical-caravan.despawn-on-plugin-disable", true);
+    }
+
+    public boolean shouldPreventDuplicatePhysicalSpawn() {
+        return config.getBoolean("physical-caravan.prevent-duplicate-spawn", true);
+    }
+
+    public int getPhysicalCaravanSpawnRadius() {
+        return Math.max(0, config.getInt("physical-caravan.spawn-radius", 3));
+    }
+
+    public double getPhysicalTraderHealth() {
+        return Math.max(1.0D, config.getDouble("physical-caravan.entity-health.trader", 100.0D));
+    }
+
+    public double getPhysicalLlamaHealth() {
+        return Math.max(1.0D, config.getDouble("physical-caravan.entity-health.llama", 100.0D));
+    }
+
+    public String getPhysicalTraderNameFormat() {
+        return config.getString("physical-caravan.names.trader", "&6Caravan %player%");
+    }
+
+    public String getPhysicalLlamaOneNameFormat() {
+        return config.getString("physical-caravan.names.llama-1", "&eCaravan Llama");
+    }
+
+    public String getPhysicalLlamaTwoNameFormat() {
+        return config.getString("physical-caravan.names.llama-2", "&eCaravan Llama");
+    }
+
+    public boolean isPhysicalOwnerOpensSetupEnabled() {
+        return config.getBoolean("physical-caravan.interaction.owner-opens-setup", true);
+    }
+
+    public boolean isPhysicalStrangerMessageEnabled() {
+        return config.getBoolean("physical-caravan.interaction.stranger-message-enabled", true);
+    }
+
+    public boolean isPhysicalDamageEnabled() {
+        return config.getBoolean("physical-caravan.damage.enabled", true);
+    }
+
+    public boolean shouldSyncPhysicalDamageToCaravanHp() {
+        return config.getBoolean("physical-caravan.damage.sync-damage-to-caravan-hp", true);
+    }
+
     public String getMessage(String path) {
         return config.getString("messages." + path, "");
     }

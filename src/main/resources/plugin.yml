@@ -5,10 +5,11 @@ api-version: '1.21'
 authors:
   - Meltarion
 description: Caravan trading system plugin skeleton for Towny servers.
+softdepend: [Towny]
 commands:
   caravan:
     description: Main command for caravan management.
-    usage: /caravan <help|reload|create|list|info|rename|delete|admin>
+    usage: /caravan <help|reload|create|list|info|rename|delete|spawn|admin>
     aliases: [caravans]
 permissions:
   meltarion.caravans.use:

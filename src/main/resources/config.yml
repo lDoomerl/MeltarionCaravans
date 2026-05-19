@@ -42,6 +42,25 @@ trade:
       - PLAYER_HEAD
       - COMMAND_BLOCK_MINECART
 
+physical-caravan:
+  enabled: true
+  despawn-on-plugin-disable: true
+  prevent-duplicate-spawn: true
+  spawn-radius: 3
+  entity-health:
+    trader: 100.0
+    llama: 100.0
+  names:
+    trader: "&6Caravan %player%"
+    llama-1: "&eCaravan Llama"
+    llama-2: "&eCaravan Llama"
+  interaction:
+    owner-opens-setup: true
+    stranger-message-enabled: true
+  damage:
+    enabled: true
+    sync-damage-to-caravan-hp: true
+
 messages:
   no-permission: "&cYou do not have permission."
   player-only: "&cOnly players can use this command."
@@ -75,6 +94,19 @@ messages:
   trade-deleted: "&aDeleted trade operation &f%id%&a."
   trade-management-opened: "&aOpened trade management for caravan &f%name% &7(%id%)&a."
   trade-slot-reserved: "&cThat slot is reserved by an active SELL trade operation."
+  physical-spawned: "&aSpawned physical caravan &f%name% &7(%id%)&a."
+  physical-despawned: "&eDespawned physical caravan &f%name% &7(%id%)&e."
+  physical-already-spawned: "&cPhysical caravan &f%name% &7(%id%) &cis already spawned."
+  physical-not-spawned: "&cPhysical caravan &f%name% &7(%id%) &cis not currently spawned."
+  physical-spawn-disabled: "&cPhysical caravans are currently disabled."
+  physical-not-owner: "&cYou may only spawn your own caravan."
+  physical-not-in-town: "&cYou must stand inside your Towny town territory to spawn a caravan."
+  physical-not-your-town: "&cYou may only spawn a caravan inside your own town territory."
+  physical-towny-not-found: "&cTowny is required for caravan spawning, but it is not available."
+  physical-trading-unavailable: "&cTrading is not available here yet."
+  physical-damaged: "&eCaravan &f%name% &7(%id%) &etook &f%damage%&e damage. HP: &f%hp%&7/&f%max_hp%&e."
+  physical-destroyed: "&cCaravan &f%name% &7(%id%) &cwas destroyed."
+  physical-owner-notified-attacked: "&cYour caravan &f%name% &7(%id%) &cis under attack. HP: &f%hp%&7/&f%max_hp%&c."
   setup-opened: "&aOpened caravan setup for &f%name% &7(%id%)&a."
   setup-cancelled: "&eTrade setup cancelled."
   setup-timeout: "&cTrade setup timed out after &f%timeout%&c seconds."
@@ -109,10 +141,14 @@ messages:
   info-usage: "&cUsage: /caravan info <id>"
   rename-usage: "&cUsage: /caravan rename <id> <new name>"
   delete-usage: "&cUsage: /caravan delete <id>"
+  spawn-usage: "&cUsage: /caravan spawn <id>"
   admin-list-usage: "&cUsage: /caravan admin list <player>"
   admin-info-usage: "&cUsage: /caravan admin info <id>"
   admin-open-usage: "&cUsage: /caravan admin open <id>"
   admin-setup-usage: "&cUsage: /caravan admin setup <id>"
+  admin-spawn-usage: "&cUsage: /caravan admin spawn <id> [player]"
+  admin-spawn-player-required: "&cConsole must specify a target player: /caravan admin spawn <id> <player>"
+  admin-despawn-usage: "&cUsage: /caravan admin despawn <id>"
   admin-trades-usage: "&cUsage: /caravan admin trades <id>"
   admin-sell-usage: "&cUsage: /caravan admin sell <id> <slot> <price>"
   admin-buy-usage: "&cUsage: /caravan admin buy <id> <material> <amount-per-transaction> <price> <max-total>"
@@ -132,6 +168,7 @@ messages:
     - "&6/caravan info <id> &7- View caravan details"
     - "&6/caravan rename <id> <name> &7- Rename your caravan"
     - "&6/caravan delete <id> &7- Delete your caravan"
+    - "&6/caravan spawn <id> &7- Spawn your physical caravan in your town"
     - "&6/caravan reload &7- Reload the plugin configuration"
     - "&6/caravan admin ... &7- Administrative caravan commands"
   admin-help:
@@ -139,6 +176,8 @@ messages:
     - "&6/caravan admin info <id> &7- View any caravan"
     - "&6/caravan admin open <id> &7- Open any caravan inventory"
     - "&6/caravan admin setup <id> &7- Open the owner-style setup GUI"
+    - "&6/caravan admin spawn <id> [player] &7- Spawn a physical caravan"
+    - "&6/caravan admin despawn <id> &7- Remove a physical caravan"
     - "&6/caravan admin trades <id> &7- Open the trade management GUI"
     - "&6/caravan admin sell <id> <slot> <price> &7- Create a SELL operation"
     - "&6/caravan admin buy <id> <material> <amount> <price> <max> &7- Create a BUY operation"

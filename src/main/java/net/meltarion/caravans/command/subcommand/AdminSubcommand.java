@@ -8,6 +8,8 @@ import net.meltarion.caravans.model.CaravanRecord;
 import net.meltarion.caravans.model.TradeOperationType;
 import net.meltarion.caravans.service.CaravanLookupResult;
 import net.meltarion.caravans.service.CaravanMutationResult;
+import net.meltarion.caravans.service.PhysicalSpawnFailureReason;
+import net.meltarion.caravans.service.PhysicalSpawnResult;
 import net.meltarion.caravans.service.TradeOperationCreateResult;
 import net.meltarion.caravans.storage.StorageException;
 import org.bukkit.Material;
@@ -44,6 +46,8 @@ public final class AdminSubcommand implements CaravanSubcommand {
             case "info" -> handleInfo(context);
             case "open" -> handleOpen(context);
             case "setup" -> handleSetup(context);
+            case "spawn" -> handleSpawn(context);
+            case "despawn" -> handleDespawn(context);
             case "trades" -> handleTrades(context);
             case "sell" -> handleSell(context);
             case "buy" -> handleBuy(context);
@@ -57,7 +61,7 @@ public final class AdminSubcommand implements CaravanSubcommand {
     @Override
     public List<String> tabComplete(CommandContext context) {
         if (context.args().length == 1) {
-            return List.of("list", "info", "open", "setup", "trades", "sell", "buy", "delete", "reload", "givelicense").stream()
+            return List.of("list", "info", "open", "setup", "spawn", "despawn", "trades", "sell", "buy", "delete", "reload", "givelicense").stream()
                 .filter(option -> option.startsWith(context.args()[0].toLowerCase()))
                 .toList();
         }
@@ -138,6 +142,8 @@ public final class AdminSubcommand implements CaravanSubcommand {
             return;
         }
 
+        context.entities().despawnCaravan(lookupResult.caravan().id());
+
         context.messages().send(context.sender(), "deleted", Map.of(
             "id", context.caravans().getShortId(mutationResult.caravan()),
             "name", mutationResult.caravan().name()
@@ -164,6 +170,65 @@ public final class AdminSubcommand implements CaravanSubcommand {
             "id", context.caravans().getShortId(caravan),
             "name", caravan.name()
         ));
+    }
+
+    private void handleSpawn(CommandContext context) {
+        if (context.args().length < 3) {
+            context.messages().send(context.sender(), "admin-spawn-usage");
+            return;
+        }
+
+        CaravanRecord caravan = resolveAdminCaravan(context, context.args()[2]);
+        if (caravan == null) {
+            return;
+        }
+
+        Player targetPlayer = null;
+        if (context.args().length >= 4) {
+            targetPlayer = Bukkit.getPlayerExact(context.args()[3]);
+            if (targetPlayer == null) {
+                context.messages().send(context.sender(), "player-not-found", Map.of("player", context.args()[3]));
+                return;
+            }
+        } else if (context.sender() instanceof Player player) {
+            targetPlayer = player;
+        }
+
+        if (targetPlayer == null) {
+            context.messages().send(context.sender(), "admin-spawn-player-required");
+            return;
+        }
+
+        PhysicalSpawnResult result = context.entities().spawnCaravan(caravan, targetPlayer.getLocation());
+        if (!result.success()) {
+            switch (result.failureReason()) {
+                case DISABLED -> context.messages().send(context.sender(), "physical-spawn-disabled");
+                case ALREADY_SPAWNED -> context.messages().send(context.sender(), "physical-already-spawned", physicalPlaceholders(context, caravan));
+                case ERROR -> context.messages().send(context.sender(), "storage-error");
+            }
+            return;
+        }
+
+        context.messages().send(context.sender(), "physical-spawned", physicalPlaceholders(context, caravan));
+    }
+
+    private void handleDespawn(CommandContext context) {
+        if (context.args().length < 3) {
+            context.messages().send(context.sender(), "admin-despawn-usage");
+            return;
+        }
+
+        CaravanRecord caravan = resolveAdminCaravan(context, context.args()[2]);
+        if (caravan == null) {
+            return;
+        }
+
+        if (!context.entities().despawnCaravan(caravan.id())) {
+            context.messages().send(context.sender(), "physical-not-spawned", physicalPlaceholders(context, caravan));
+            return;
+        }
+
+        context.messages().send(context.sender(), "physical-despawned", physicalPlaceholders(context, caravan));
     }
 
     private void handleSetup(CommandContext context) {
@@ -359,5 +424,15 @@ public final class AdminSubcommand implements CaravanSubcommand {
                 "name", caravan.name()
             ));
         }
+    }
+
+    private Map<String, String> physicalPlaceholders(CommandContext context, CaravanRecord caravan) {
+        return Map.of(
+            "id", context.caravans().getShortId(caravan),
+            "name", caravan.name(),
+            "player", caravan.ownerName(),
+            "hp", String.valueOf(caravan.hp()),
+            "max_hp", String.valueOf(caravan.maxHp())
+        );
     }
 }

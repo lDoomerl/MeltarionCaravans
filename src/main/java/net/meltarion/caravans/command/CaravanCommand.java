@@ -15,6 +15,7 @@ import net.meltarion.caravans.command.subcommand.InfoSubcommand;
 import net.meltarion.caravans.command.subcommand.ListSubcommand;
 import net.meltarion.caravans.command.subcommand.RenameSubcommand;
 import net.meltarion.caravans.command.subcommand.ReloadSubcommand;
+import net.meltarion.caravans.command.subcommand.SpawnSubcommand;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -36,6 +37,7 @@ public final class CaravanCommand implements CommandExecutor, TabCompleter {
         register(new InfoSubcommand());
         register(new RenameSubcommand());
         register(new DeleteSubcommand());
+        register(new SpawnSubcommand());
         register(new AdminSubcommand());
     }
 
