@@ -1,0 +1,21 @@
+.gradle/
+build/
+out/
+bin/
+.idea/
+*.iml
+*.ipr
+*.iws
+.settings/
+.classpath
+.project
+.vscode/
+
+# Gradle wrapper jar is expected in version control.
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# OS files
+Thumbs.db
+Desktop.ini
+.DS_Store
