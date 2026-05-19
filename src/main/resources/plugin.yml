@@ -1,0 +1,30 @@
+name: MeltarionCaravans
+version: ${version}
+main: net.meltarion.caravans.MeltarionCaravansPlugin
+api-version: '1.21'
+authors:
+  - Meltarion
+description: Caravan trading system plugin skeleton for Towny servers.
+website: https://github.com/your-org/MeltarionCaravans
+commands:
+  caravan:
+    description: Main command for caravan management.
+    usage: /caravan <help|reload|create|list>
+    permission: meltarion.caravans.use
+    aliases: [caravans]
+permissions:
+  meltarion.caravans.use:
+    description: Allows use of basic caravan commands.
+    default: true
+  meltarion.caravans.reload:
+    description: Allows reloading MeltarionCaravans configuration.
+    default: op
+  meltarion.caravans.admin:
+    description: Allows administrative caravan actions.
+    default: op
+  meltarion.caravans.limit.2:
+    description: Raises the player's caravan limit to 2.
+    default: false
+  meltarion.caravans.limit.3:
+    description: Raises the player's caravan limit to 3.
+    default: false

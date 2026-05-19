@@ -1,0 +1,26 @@
+currency-item: GOLD_INGOT
+default-caravan-limit: 1
+permission-limits:
+  meltarion.caravans.limit.2: 2
+  meltarion.caravans.limit.3: 3
+
+caravan:
+  max-hp: 5000
+  virtual-movement-enabled: true
+
+messages:
+  no-permission: "&cYou do not have permission."
+  player-only: "&cOnly players can use this command."
+  reloaded: "&aMeltarionCaravans reloaded."
+  created: "&aCreated caravan &f%name%&a."
+  duplicate-name: "&cYou already have a caravan named &f%name%&c."
+  limit-reached: "&cYou have reached your caravan limit of &f%limit%&c."
+  list-header: "&6Your caravans:"
+  list-entry: "&e- %name%"
+  list-empty: "&7You do not have any caravans yet."
+  create-usage: "&cUsage: /caravan create <name>"
+  unknown-subcommand: "&cUnknown subcommand. Use /caravan help."
+  help:
+    - "&6/caravan create <name> &7- Create a caravan"
+    - "&6/caravan list &7- List your caravans"
+    - "&6/caravan reload &7- Reload the plugin configuration"
