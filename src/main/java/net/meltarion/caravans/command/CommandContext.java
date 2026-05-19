@@ -2,6 +2,7 @@ package net.meltarion.caravans.command;
 
 import net.meltarion.caravans.MeltarionCaravansPlugin;
 import net.meltarion.caravans.config.ConfigManager;
+import net.meltarion.caravans.service.CaravanInventoryService;
 import net.meltarion.caravans.service.CaravanService;
 import net.meltarion.caravans.service.CaravanLicenseService;
 import net.meltarion.caravans.service.MessageService;
@@ -23,6 +24,10 @@ public record CommandContext(
 
     public CaravanLicenseService licenses() {
         return plugin.getLicenseService();
+    }
+
+    public CaravanInventoryService inventories() {
+        return plugin.getInventoryService();
     }
 
     public ConfigManager config() {

@@ -16,14 +16,17 @@ public final class ConfigManager {
     private final JavaPlugin plugin;
 
     private FileConfiguration config;
+    private int validatedInventorySize;
 
     public ConfigManager(JavaPlugin plugin) {
         this.plugin = plugin;
         this.config = plugin.getConfig();
+        this.validatedInventorySize = resolveInventorySize();
     }
 
     public void reload() {
         this.config = plugin.getConfig();
+        this.validatedInventorySize = resolveInventorySize();
     }
 
     public Material getCurrencyItem() {
@@ -60,6 +63,14 @@ public final class ConfigManager {
 
     public boolean isVirtualMovementEnabled() {
         return config.getBoolean("caravan.virtual-movement-enabled", true);
+    }
+
+    public int getCaravanInventorySize() {
+        return validatedInventorySize;
+    }
+
+    public String getCaravanInventoryTitle() {
+        return config.getString("caravan.inventory-title", "&6Caravan: &e%name%");
     }
 
     public int getMaxCaravanNameLength() {
@@ -122,5 +133,20 @@ public final class ConfigManager {
 
     public List<String> getMessageList(String path) {
         return config.getStringList("messages." + path);
+    }
+
+    private int resolveInventorySize() {
+        int configuredSize = config.getInt("caravan.inventory-size", 27);
+        if (configuredSize == 9
+            || configuredSize == 18
+            || configuredSize == 27
+            || configuredSize == 36
+            || configuredSize == 45
+            || configuredSize == 54) {
+            return configuredSize;
+        }
+
+        plugin.getLogger().warning("Invalid caravan.inventory-size '" + configuredSize + "' in config.yml. Falling back to 27.");
+        return 27;
     }
 }

@@ -21,10 +21,11 @@ import org.bukkit.entity.Player;
 public final class PersistentCaravanService implements CaravanService {
 
     private static final Pattern VALID_NAME_PATTERN = Pattern.compile("[A-Za-z0-9 _-]+");
-    private static final Pattern COLOR_CODE_PATTERN = Pattern.compile("(?i)(?:&|§)[0-9A-FK-OR]");
+    private static final Pattern COLOR_CODE_PATTERN = Pattern.compile("(?i)(?:&|\u00A7)[0-9A-FK-OR]");
 
     private final ConfigManager configManager;
     private final CaravanStorage storage;
+    private final CaravanInventoryService inventoryService;
     private final CaravanLicenseService caravanLicenseService;
     private final Logger logger;
     private final Map<UUID, List<CaravanRecord>> caravansByOwner = new ConcurrentHashMap<>();
@@ -32,11 +33,13 @@ public final class PersistentCaravanService implements CaravanService {
     public PersistentCaravanService(
         ConfigManager configManager,
         CaravanStorage storage,
+        CaravanInventoryService inventoryService,
         CaravanLicenseService caravanLicenseService,
         Logger logger
     ) {
         this.configManager = configManager;
         this.storage = storage;
+        this.inventoryService = inventoryService;
         this.caravanLicenseService = caravanLicenseService;
         this.logger = logger;
     }
@@ -147,7 +150,8 @@ public final class PersistentCaravanService implements CaravanService {
     @Override
     public synchronized CaravanMutationResult deleteCaravan(CaravanRecord caravan) {
         try {
-            storage.deleteCaravan(caravan.id());
+            storage.deleteCaravanData(caravan.id());
+            inventoryService.discardOpenInventory(caravan.id());
         } catch (StorageException exception) {
             logger.log(Level.SEVERE, "Failed to delete caravan " + caravan.id() + '.', exception);
             return CaravanMutationResult.failure(CaravanMutationResult.FailureReason.STORAGE_ERROR);
@@ -155,6 +159,13 @@ public final class PersistentCaravanService implements CaravanService {
 
         removeCachedCaravan(caravan);
         return CaravanMutationResult.success(caravan);
+    }
+
+    @Override
+    public synchronized boolean caravanExists(UUID caravanId) {
+        return caravansByOwner.values().stream()
+            .flatMap(List::stream)
+            .anyMatch(caravan -> caravan.id().equals(caravanId));
     }
 
     @Override
@@ -217,8 +228,14 @@ public final class PersistentCaravanService implements CaravanService {
 
         try {
             storage.insertCaravan(caravanRecord);
+            inventoryService.initializeInventory(caravanRecord);
         } catch (StorageException exception) {
             logger.log(Level.SEVERE, "Failed to persist caravan '" + resolvedName + "' for player " + owner.getName() + '.', exception);
+            try {
+                storage.deleteCaravanData(caravanRecord.id());
+            } catch (StorageException rollbackException) {
+                exception.addSuppressed(rollbackException);
+            }
             return CaravanCreationResult.failure(CaravanCreationResult.FailureReason.STORAGE_ERROR, caravanLimit);
         }
 

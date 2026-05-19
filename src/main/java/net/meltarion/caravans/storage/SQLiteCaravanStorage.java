@@ -17,7 +17,7 @@ import java.util.logging.Logger;
 import net.meltarion.caravans.model.CaravanRecord;
 import net.meltarion.caravans.model.CaravanStatus;
 
-public final class SQLiteCaravanStorage implements CaravanStorage {
+public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInventoryStorage {
 
     private static final String CREATE_CARAVANS_TABLE = """
         CREATE TABLE IF NOT EXISTS caravans (
@@ -36,6 +36,15 @@ public final class SQLiteCaravanStorage implements CaravanStorage {
     private static final String CREATE_OWNER_INDEX = """
         CREATE INDEX IF NOT EXISTS idx_caravans_owner_uuid
         ON caravans (owner_uuid)
+        """;
+
+    private static final String CREATE_CARAVAN_INVENTORIES_TABLE = """
+        CREATE TABLE IF NOT EXISTS caravan_inventories (
+            caravan_id TEXT PRIMARY KEY,
+            contents TEXT NOT NULL,
+            updated_at TEXT NOT NULL,
+            FOREIGN KEY (caravan_id) REFERENCES caravans(id) ON DELETE CASCADE
+        )
         """;
 
     private static final String SELECT_ALL_CARAVANS = """
@@ -60,6 +69,25 @@ public final class SQLiteCaravanStorage implements CaravanStorage {
         WHERE id = ?
         """;
 
+    private static final String DELETE_CARAVAN_INVENTORY = """
+        DELETE FROM caravan_inventories
+        WHERE caravan_id = ?
+        """;
+
+    private static final String UPSERT_CARAVAN_INVENTORY = """
+        INSERT INTO caravan_inventories (caravan_id, contents, updated_at)
+        VALUES (?, ?, ?)
+        ON CONFLICT(caravan_id) DO UPDATE SET
+            contents = excluded.contents,
+            updated_at = excluded.updated_at
+        """;
+
+    private static final String SELECT_CARAVAN_INVENTORY = """
+        SELECT contents
+        FROM caravan_inventories
+        WHERE caravan_id = ?
+        """;
+
     private final Path databasePath;
     private final Logger logger;
 
@@ -77,11 +105,13 @@ public final class SQLiteCaravanStorage implements CaravanStorage {
             this.connection = DriverManager.getConnection("jdbc:sqlite:" + databasePath.toAbsolutePath());
 
             try (Statement statement = connection.createStatement()) {
+                statement.execute("PRAGMA foreign_keys=ON");
                 statement.execute("PRAGMA journal_mode=WAL");
                 statement.execute("PRAGMA synchronous=NORMAL");
                 statement.execute("PRAGMA busy_timeout=5000");
                 statement.executeUpdate(CREATE_CARAVANS_TABLE);
                 statement.executeUpdate(CREATE_OWNER_INDEX);
+                statement.executeUpdate(CREATE_CARAVAN_INVENTORIES_TABLE);
             }
 
             logger.info("Initialized SQLite caravan storage at " + databasePath.toAbsolutePath() + '.');
@@ -156,6 +186,83 @@ public final class SQLiteCaravanStorage implements CaravanStorage {
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new StorageException("Failed to delete caravan from SQLite.", exception);
+        }
+    }
+
+    @Override
+    public synchronized void deleteCaravanData(UUID caravanId) throws StorageException {
+        ensureInitialized();
+
+        boolean previousAutoCommit = true;
+        try {
+            previousAutoCommit = connection.getAutoCommit();
+            connection.setAutoCommit(false);
+
+            try (PreparedStatement deleteInventory = connection.prepareStatement(DELETE_CARAVAN_INVENTORY);
+                 PreparedStatement deleteCaravan = connection.prepareStatement(DELETE_CARAVAN)) {
+                deleteInventory.setString(1, caravanId.toString());
+                deleteInventory.executeUpdate();
+
+                deleteCaravan.setString(1, caravanId.toString());
+                deleteCaravan.executeUpdate();
+            }
+
+            connection.commit();
+        } catch (SQLException exception) {
+            try {
+                connection.rollback();
+            } catch (SQLException rollbackException) {
+                exception.addSuppressed(rollbackException);
+            }
+            throw new StorageException("Failed to delete caravan data from SQLite.", exception);
+        } finally {
+            try {
+                connection.setAutoCommit(previousAutoCommit);
+            } catch (SQLException ignored) {
+            }
+        }
+    }
+
+    @Override
+    public synchronized String loadInventoryContents(UUID caravanId) throws StorageException {
+        ensureInitialized();
+
+        try (PreparedStatement statement = connection.prepareStatement(SELECT_CARAVAN_INVENTORY)) {
+            statement.setString(1, caravanId.toString());
+            try (ResultSet resultSet = statement.executeQuery()) {
+                if (resultSet.next()) {
+                    return resultSet.getString("contents");
+                }
+                return null;
+            }
+        } catch (SQLException exception) {
+            throw new StorageException("Failed to load caravan inventory from SQLite.", exception);
+        }
+    }
+
+    @Override
+    public synchronized void saveInventoryContents(UUID caravanId, String serializedContents, String updatedAt) throws StorageException {
+        ensureInitialized();
+
+        try (PreparedStatement statement = connection.prepareStatement(UPSERT_CARAVAN_INVENTORY)) {
+            statement.setString(1, caravanId.toString());
+            statement.setString(2, serializedContents);
+            statement.setString(3, updatedAt);
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new StorageException("Failed to save caravan inventory to SQLite.", exception);
+        }
+    }
+
+    @Override
+    public synchronized void deleteInventoryContents(UUID caravanId) throws StorageException {
+        ensureInitialized();
+
+        try (PreparedStatement statement = connection.prepareStatement(DELETE_CARAVAN_INVENTORY)) {
+            statement.setString(1, caravanId.toString());
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new StorageException("Failed to delete caravan inventory from SQLite.", exception);
         }
     }
 

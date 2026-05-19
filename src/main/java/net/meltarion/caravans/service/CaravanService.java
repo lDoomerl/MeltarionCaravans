@@ -23,6 +23,8 @@ public interface CaravanService {
 
     CaravanMutationResult deleteCaravan(CaravanRecord caravan);
 
+    boolean caravanExists(UUID caravanId);
+
     int getCaravanLimit(Player player);
 
     String getShortId(CaravanRecord caravan);

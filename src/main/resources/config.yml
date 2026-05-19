@@ -7,6 +7,8 @@ permission-limits:
 caravan:
   max-hp: 5000
   max-name-length: 24
+  inventory-size: 27
+  inventory-title: "&6Caravan: &e%name%"
   virtual-movement-enabled: true
 
 caravan-license:
@@ -38,6 +40,11 @@ messages:
   right-click-failed: "&cCould not create a caravan."
   renamed: "&aRenamed caravan &f%id%&a to &f%name%&a."
   deleted: "&aDeleted caravan &f%name% &7(%id%)&a."
+  inventory-opened: "&aOpened caravan inventory for &f%name% &7(%id%)&a."
+  inventory-saved: "&7Saved caravan inventory for &f%name% &7(%id%)&7."
+  inventory-save-failed: "&cFailed to save caravan inventory for &f%name% &7(%id%)&c."
+  inventory-size-invalid: "&cInvalid caravan inventory size in config. Falling back to 27."
+  admin-open-only: "&cOnly players can use the admin inventory open command."
   caravan-not-found: "&cCaravan not found."
   ambiguous-id: "&cThat caravan ID is ambiguous. Please use the full UUID."
   player-not-found: "&cPlayer &f%player%&c was not found."
@@ -56,6 +63,7 @@ messages:
   delete-usage: "&cUsage: /caravan delete <id>"
   admin-list-usage: "&cUsage: /caravan admin list <player>"
   admin-info-usage: "&cUsage: /caravan admin info <id>"
+  admin-open-usage: "&cUsage: /caravan admin open <id>"
   admin-delete-usage: "&cUsage: /caravan admin delete <id>"
   admin-givelicense-usage: "&cUsage: /caravan admin givelicense <player> [amount]"
   unknown-subcommand: "&cUnknown subcommand. Use /caravan help."
@@ -77,6 +85,7 @@ messages:
   admin-help:
     - "&6/caravan admin list <player> &7- List a player's caravans"
     - "&6/caravan admin info <id> &7- View any caravan"
+    - "&6/caravan admin open <id> &7- Open any caravan inventory"
     - "&6/caravan admin delete <id> &7- Delete any caravan"
     - "&6/caravan admin reload &7- Reload the plugin configuration"
     - "&6/caravan admin givelicense <player> [amount] &7- Give Caravan Licenses"

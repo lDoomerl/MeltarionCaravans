@@ -4,11 +4,14 @@ import java.nio.file.Path;
 import java.util.logging.Level;
 import net.meltarion.caravans.command.CaravanCommand;
 import net.meltarion.caravans.config.ConfigManager;
+import net.meltarion.caravans.listener.CaravanInventoryListener;
 import net.meltarion.caravans.listener.CaravanLicenseListener;
+import net.meltarion.caravans.service.CaravanInventoryService;
 import net.meltarion.caravans.service.CaravanService;
 import net.meltarion.caravans.service.CaravanLicenseService;
 import net.meltarion.caravans.service.MessageService;
 import net.meltarion.caravans.service.PersistentCaravanService;
+import net.meltarion.caravans.storage.CaravanInventoryStorage;
 import net.meltarion.caravans.storage.CaravanStorage;
 import net.meltarion.caravans.storage.SQLiteCaravanStorage;
 import net.meltarion.caravans.storage.StorageException;
@@ -20,6 +23,7 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
     private ConfigManager configManager;
     private MessageService messageService;
     private CaravanLicenseService licenseService;
+    private CaravanInventoryService inventoryService;
     private CaravanStorage caravanStorage;
     private CaravanService caravanService;
 
@@ -40,12 +44,16 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
         }
 
         registerCommands();
+        getServer().getPluginManager().registerEvents(new CaravanInventoryListener(this), this);
         getServer().getPluginManager().registerEvents(new CaravanLicenseListener(this), this);
         getLogger().info("MeltarionCaravans enabled.");
     }
 
     @Override
     public void onDisable() {
+        if (inventoryService != null) {
+            inventoryService.saveAllOpenInventories();
+        }
         if (caravanStorage != null) {
             try {
                 caravanStorage.close();
@@ -77,14 +85,21 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
         return licenseService;
     }
 
+    public CaravanInventoryService getInventoryService() {
+        return inventoryService;
+    }
+
     private void initializeStorage() throws StorageException {
         Path databasePath = getDataFolder().toPath().resolve("caravans.db");
-        this.caravanStorage = new SQLiteCaravanStorage(databasePath, getLogger());
+        SQLiteCaravanStorage storage = new SQLiteCaravanStorage(databasePath, getLogger());
+        this.caravanStorage = storage;
         caravanStorage.initialize();
+        this.inventoryService = new CaravanInventoryService(configManager, (CaravanInventoryStorage) storage, getLogger());
 
         PersistentCaravanService persistentCaravanService = new PersistentCaravanService(
             configManager,
             caravanStorage,
+            inventoryService,
             licenseService,
             getLogger()
         );

@@ -7,6 +7,7 @@ import net.meltarion.caravans.command.CommandContext;
 import net.meltarion.caravans.model.CaravanRecord;
 import net.meltarion.caravans.service.CaravanLookupResult;
 import net.meltarion.caravans.service.CaravanMutationResult;
+import net.meltarion.caravans.storage.StorageException;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -38,6 +39,7 @@ public final class AdminSubcommand implements CaravanSubcommand {
         switch (action) {
             case "list" -> handleList(context);
             case "info" -> handleInfo(context);
+            case "open" -> handleOpen(context);
             case "delete" -> handleDelete(context);
             case "reload" -> handleReload(context);
             case "givelicense" -> handleGiveLicense(context);
@@ -48,7 +50,7 @@ public final class AdminSubcommand implements CaravanSubcommand {
     @Override
     public List<String> tabComplete(CommandContext context) {
         if (context.args().length == 1) {
-            return List.of("list", "info", "delete", "reload", "givelicense").stream()
+            return List.of("list", "info", "open", "delete", "reload", "givelicense").stream()
                 .filter(option -> option.startsWith(context.args()[0].toLowerCase()))
                 .toList();
         }
@@ -132,6 +134,41 @@ public final class AdminSubcommand implements CaravanSubcommand {
         context.messages().send(context.sender(), "deleted", Map.of(
             "id", context.caravans().getShortId(mutationResult.caravan()),
             "name", mutationResult.caravan().name()
+        ));
+    }
+
+    private void handleOpen(CommandContext context) {
+        if (!(context.sender() instanceof Player player)) {
+            context.messages().send(context.sender(), "admin-open-only");
+            return;
+        }
+
+        if (context.args().length < 3) {
+            context.messages().send(context.sender(), "admin-open-usage");
+            return;
+        }
+
+        CaravanLookupResult result = context.caravans().findCaravan(context.args()[2]);
+        if (!result.success()) {
+            if (result.failureReason() == CaravanLookupResult.FailureReason.AMBIGUOUS) {
+                context.messages().send(context.sender(), "ambiguous-id");
+            } else {
+                context.messages().send(context.sender(), "caravan-not-found");
+            }
+            return;
+        }
+
+        try {
+            context.inventories().openInventoryForAdmin(player, result.caravan());
+        } catch (StorageException exception) {
+            context.plugin().getLogger().log(java.util.logging.Level.SEVERE, "Failed to open caravan inventory " + result.caravan().id() + '.', exception);
+            context.messages().send(context.sender(), "storage-error");
+            return;
+        }
+
+        context.messages().send(context.sender(), "inventory-opened", Map.of(
+            "id", context.caravans().getShortId(result.caravan()),
+            "name", result.caravan().name()
         ));
     }
 
