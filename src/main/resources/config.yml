@@ -42,6 +42,9 @@ trade:
       - PLAYER_HEAD
       - COMMAND_BLOCK_MINECART
 
+debug:
+  enabled: false
+
 physical-caravan:
   enabled: true
   despawn-on-plugin-disable: true
@@ -107,6 +110,22 @@ messages:
   physical-damaged: "&eCaravan &f%name% &7(%id%) &etook &f%damage%&e damage. HP: &f%hp%&7/&f%max_hp%&e."
   physical-destroyed: "&cCaravan &f%name% &7(%id%) &cwas destroyed."
   physical-owner-notified-attacked: "&cYour caravan &f%name% &7(%id%) &cis under attack. HP: &f%hp%&7/&f%max_hp%&c."
+  public-trade-opened: "&aOpened public trade for &f%name% &7(%id%)&a."
+  public-trade-shop-plot-required: "&cThis caravan can trade only on Shop Plots."
+  public-trade-no-sell-offers: "&cThis caravan has no active SELL offers right now."
+  public-trade-no-buy-orders: "&cThis caravan has no active BUY orders right now."
+  public-trade-operation-inactive: "&cThat trade offer is no longer active."
+  public-trade-not-enough-currency: "&cYou do not have enough currency items."
+  public-trade-not-enough-items: "&cYou do not have enough matching items."
+  public-trade-not-enough-space: "&cYou do not have enough inventory space."
+  public-trade-caravan-not-enough-space: "&cThe caravan does not have enough inventory space for this trade."
+  public-trade-caravan-not-enough-currency: "&cThe caravan does not have enough currency to pay for this trade."
+  public-trade-reserved-slot-invalid: "&cThat caravan offer is no longer backed by valid stock."
+  public-trade-buy-success: "&aBought &f%amount%x %item%&a from &f%name%&a for &f%price%&a. Remaining stock: &f%remaining%&a."
+  public-trade-sell-success: "&aSold &f%amount%x %item%&a to &f%name%&a for &f%price%&a. Remaining wanted: &f%remaining%&a."
+  public-trade-transaction-failed: "&cThe trade could not be completed safely."
+  public-trade-stock-depleted: "&aBought the last &f%amount%x %item%&a from &f%name%&a for &f%price%&a. Stock is now depleted."
+  public-trade-order-completed: "&aSold the final &f%amount%x %item%&a to &f%name%&a for &f%price%&a. The buy order is now complete."
   setup-opened: "&aOpened caravan setup for &f%name% &7(%id%)&a."
   setup-cancelled: "&eTrade setup cancelled."
   setup-timeout: "&cTrade setup timed out after &f%timeout%&c seconds."

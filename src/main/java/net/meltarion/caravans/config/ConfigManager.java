@@ -192,6 +192,10 @@ public final class ConfigManager {
         return config.getBoolean("physical-caravan.damage.sync-damage-to-caravan-hp", true);
     }
 
+    public boolean isDebugEnabled() {
+        return config.getBoolean("debug.enabled", false);
+    }
+
     public String getMessage(String path) {
         return config.getString("messages." + path, "");
     }

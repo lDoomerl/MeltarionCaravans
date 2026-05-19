@@ -12,6 +12,8 @@ public interface TradeOperationStorage {
 
     void updateTradeOperationActiveState(UUID tradeOperationId, boolean active, String updatedAt) throws StorageException;
 
+    void updateTradeOperation(TradeOperationRecord tradeOperation) throws StorageException;
+
     void deleteTradeOperation(UUID tradeOperationId) throws StorageException;
 
     void deleteTradeOperationsByCaravan(UUID caravanId) throws StorageException;

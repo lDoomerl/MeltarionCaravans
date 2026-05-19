@@ -44,14 +44,26 @@ public final class CaravanInventoryService {
     }
 
     public Inventory openInventoryForAdmin(Player player, CaravanRecord caravan) throws StorageException {
+        Inventory inventory = getInventory(caravan);
+        player.openInventory(inventory);
+        return inventory;
+    }
+
+    public Inventory getInventory(CaravanRecord caravan) throws StorageException {
         Inventory inventory = openInventories.get(caravan.id());
         if (inventory == null) {
             inventory = loadInventory(caravan);
             openInventories.put(caravan.id(), inventory);
         }
-
-        player.openInventory(inventory);
         return inventory;
+    }
+
+    public void saveInventory(CaravanRecord caravan) throws StorageException {
+        Inventory inventory = openInventories.get(caravan.id());
+        if (inventory == null) {
+            inventory = getInventory(caravan);
+        }
+        saveInventory(inventory);
     }
 
     public void handleInventoryClose(Inventory inventory) throws StorageException {
@@ -86,10 +98,7 @@ public final class CaravanInventoryService {
     }
 
     public ItemStack getItemInSlot(CaravanRecord caravan, int slot) throws StorageException {
-        Inventory inventory = openInventories.get(caravan.id());
-        if (inventory == null) {
-            inventory = loadInventory(caravan);
-        }
+        Inventory inventory = getInventory(caravan);
 
         if (slot < 0 || slot >= inventory.getSize()) {
             return null;
@@ -100,10 +109,7 @@ public final class CaravanInventoryService {
     }
 
     public ItemStack[] getInventorySnapshot(CaravanRecord caravan) throws StorageException {
-        Inventory inventory = openInventories.get(caravan.id());
-        if (inventory == null) {
-            inventory = loadInventory(caravan);
-        }
+        Inventory inventory = getInventory(caravan);
 
         ItemStack[] snapshot = new ItemStack[inventory.getSize()];
         ItemStack[] contents = inventory.getContents();

@@ -148,6 +148,14 @@ public final class TradeOperationService {
             .toList();
     }
 
+    public synchronized List<TradeOperationRecord> getActiveOperations(UUID caravanId, TradeOperationType type) {
+        return operationsByCaravan.getOrDefault(caravanId, List.of()).stream()
+            .filter(TradeOperationRecord::active)
+            .filter(operation -> operation.type() == type)
+            .sorted(Comparator.comparing(TradeOperationRecord::createdAt))
+            .toList();
+    }
+
     public synchronized boolean hasActiveSellOperationForSlot(UUID caravanId, int slot) {
         return operationsByCaravan.getOrDefault(caravanId, List.of()).stream()
             .anyMatch(operation -> operation.active()
@@ -162,6 +170,11 @@ public final class TradeOperationService {
             return null;
         }
         return operations.get(displayIndex);
+    }
+
+    public synchronized TradeOperationRecord getTradeOperationById(UUID tradeOperationId) {
+        TradeOperationRecord operation = findById(tradeOperationId);
+        return operation == null ? null : copyOperation(operation);
     }
 
     public synchronized void openTradeManagementInventory(Player player, CaravanRecord caravan) {
@@ -235,6 +248,23 @@ public final class TradeOperationService {
         return TradeOperationMutationResult.success(existing);
     }
 
+    public synchronized TradeOperationMutationResult updateOperation(TradeOperationRecord updated) {
+        TradeOperationRecord existing = findById(updated.id());
+        if (existing == null) {
+            return TradeOperationMutationResult.failure(TradeOperationMutationResult.FailureReason.TRADE_NOT_FOUND);
+        }
+
+        try {
+            storage.updateTradeOperation(updated);
+        } catch (StorageException exception) {
+            logger.log(Level.SEVERE, "Failed to update trade operation " + updated.id() + '.', exception);
+            return TradeOperationMutationResult.failure(TradeOperationMutationResult.FailureReason.STORAGE_ERROR);
+        }
+
+        replaceTradeOperation(updated);
+        return TradeOperationMutationResult.success(updated);
+    }
+
     public synchronized void discardCaravanState(UUID caravanId) {
         operationsByCaravan.remove(caravanId);
     }
@@ -262,6 +292,23 @@ public final class TradeOperationService {
             .filter(operation -> operation.id().equals(tradeOperationId))
             .findFirst()
             .orElse(null);
+    }
+
+    private TradeOperationRecord copyOperation(TradeOperationRecord operation) {
+        return new TradeOperationRecord(
+            operation.id(),
+            operation.caravanId(),
+            operation.type(),
+            operation.itemStack().clone(),
+            operation.amountPerTransaction(),
+            operation.priceCurrencyAmount(),
+            operation.maxTotalAmount(),
+            operation.fulfilledAmount(),
+            operation.reservedInventorySlot(),
+            operation.active(),
+            operation.createdAt(),
+            operation.updatedAt()
+        );
     }
 
     private void replaceTradeOperation(TradeOperationRecord updated) {

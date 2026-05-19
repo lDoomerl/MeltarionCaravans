@@ -7,6 +7,7 @@ import net.meltarion.caravans.config.ConfigManager;
 import net.meltarion.caravans.listener.CaravanInventoryListener;
 import net.meltarion.caravans.listener.CaravanPhysicalEntityDamageListener;
 import net.meltarion.caravans.listener.CaravanPhysicalEntityInteractListener;
+import net.meltarion.caravans.listener.CaravanPublicTradeListener;
 import net.meltarion.caravans.listener.CaravanLicenseListener;
 import net.meltarion.caravans.listener.CaravanSetupListener;
 import net.meltarion.caravans.listener.TradeSetupSessionListener;
@@ -17,6 +18,8 @@ import net.meltarion.caravans.service.CaravanService;
 import net.meltarion.caravans.service.CaravanLicenseService;
 import net.meltarion.caravans.service.MessageService;
 import net.meltarion.caravans.service.PersistentCaravanService;
+import net.meltarion.caravans.service.PublicTradeGuiService;
+import net.meltarion.caravans.service.PublicTradeService;
 import net.meltarion.caravans.service.TownyIntegrationService;
 import net.meltarion.caravans.service.TradeOperationService;
 import net.meltarion.caravans.service.TradeSetupSessionService;
@@ -36,7 +39,9 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
     private CaravanInventoryService inventoryService;
     private TradeOperationService tradeOperationService;
     private CaravanSetupGuiService caravanSetupGuiService;
+    private PublicTradeGuiService publicTradeGuiService;
     private TradeSetupSessionService tradeSetupSessionService;
+    private PublicTradeService publicTradeService;
     private CaravanEntityService caravanEntityService;
     private TownyIntegrationService townyIntegrationService;
     private CaravanStorage caravanStorage;
@@ -65,6 +70,7 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new TradeSetupSessionListener(this), this);
         getServer().getPluginManager().registerEvents(new CaravanPhysicalEntityInteractListener(this), this);
         getServer().getPluginManager().registerEvents(new CaravanPhysicalEntityDamageListener(this), this);
+        getServer().getPluginManager().registerEvents(new CaravanPublicTradeListener(this), this);
         getLogger().info("MeltarionCaravans enabled.");
     }
 
@@ -123,6 +129,14 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
         return tradeSetupSessionService;
     }
 
+    public PublicTradeGuiService getPublicTradeGuiService() {
+        return publicTradeGuiService;
+    }
+
+    public PublicTradeService getPublicTradeService() {
+        return publicTradeService;
+    }
+
     public CaravanEntityService getCaravanEntityService() {
         return caravanEntityService;
     }
@@ -152,7 +166,16 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
         this.caravanService = persistentCaravanService;
         this.caravanSetupGuiService = new CaravanSetupGuiService(configManager, inventoryService, tradeOperationService);
         this.caravanEntityService = new CaravanEntityService(this, configManager, getLogger());
-        this.townyIntegrationService = new TownyIntegrationService(getServer().getPluginManager(), getLogger());
+        this.townyIntegrationService = new TownyIntegrationService(getServer().getPluginManager(), configManager, getLogger());
+        this.publicTradeGuiService = new PublicTradeGuiService(configManager, inventoryService, tradeOperationService);
+        this.publicTradeService = new PublicTradeService(
+            configManager,
+            inventoryService,
+            tradeOperationService,
+            caravanEntityService,
+            townyIntegrationService,
+            getLogger()
+        );
         this.tradeSetupSessionService = new TradeSetupSessionService(
             caravanService,
             tradeOperationService,

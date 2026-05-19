@@ -1,8 +1,10 @@
 package net.meltarion.caravans.service;
 
 import java.lang.reflect.Method;
+import org.bukkit.Location;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import net.meltarion.caravans.config.ConfigManager;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginManager;
@@ -10,11 +12,13 @@ import org.bukkit.plugin.PluginManager;
 public final class TownyIntegrationService {
 
     private final PluginManager pluginManager;
+    private final ConfigManager configManager;
     private final Logger logger;
     private boolean warnedAboutMissingTowny;
 
-    public TownyIntegrationService(PluginManager pluginManager, Logger logger) {
+    public TownyIntegrationService(PluginManager pluginManager, ConfigManager configManager, Logger logger) {
         this.pluginManager = pluginManager;
+        this.configManager = configManager;
         this.logger = logger;
     }
 
@@ -60,7 +64,45 @@ public final class TownyIntegrationService {
         }
     }
 
+    public boolean isShopPlot(Location location) {
+        Plugin townyPlugin = pluginManager.getPlugin("Towny");
+        if (townyPlugin == null || !townyPlugin.isEnabled()) {
+            debug("Towny missing while checking Shop Plot at " + location + '.');
+            return false;
+        }
+
+        try {
+            Class<?> townyApiClass = Class.forName("com.palmergames.bukkit.towny.TownyAPI");
+            Object townyApi = townyApiClass.getMethod("getInstance").invoke(null);
+            Object townBlock = invokeMethod(townyApi, "getTownBlock", new Class<?>[]{org.bukkit.Location.class}, location);
+            if (townBlock == null) {
+                debug("No TownBlock at " + location + ';');
+                return false;
+            }
+
+            Object type = townBlock.getClass().getMethod("getType").invoke(townBlock);
+            if (type == null) {
+                debug("TownBlock type was null at " + location + ';');
+                return false;
+            }
+
+            String normalized = type.toString().toUpperCase(java.util.Locale.ROOT);
+            boolean result = normalized.contains("SHOP") || normalized.contains("COMMERCIAL");
+            debug("Shop Plot check at " + location + " -> " + normalized + " => " + result);
+            return result;
+        } catch (ReflectiveOperationException exception) {
+            logger.log(Level.SEVERE, "Failed to query Towny API for Shop Plot validation.", exception);
+            return false;
+        }
+    }
+
     private Object invokeMethod(Object target, String methodName, Class<?>[] parameterTypes, Object... args) throws ReflectiveOperationException {
         return target.getClass().getMethod(methodName, parameterTypes).invoke(target, args);
+    }
+
+    private void debug(String message) {
+        if (configManager.isDebugEnabled()) {
+            logger.info("[TownyDebug] " + message);
+        }
     }
 }

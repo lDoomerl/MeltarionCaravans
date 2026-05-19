@@ -43,8 +43,19 @@ public final class CaravanPhysicalEntityInteractListener implements Listener {
             return;
         }
 
-        if (!owner && !admin && plugin.getConfigManager().isPhysicalStrangerMessageEnabled()) {
-            plugin.getMessageService().send(player, "physical-trading-unavailable");
+        if (!owner && !admin) {
+            if (plugin.getTownyIntegrationService().isShopPlot(event.getRightClicked().getLocation())) {
+                plugin.getPublicTradeGuiService().openMainMenu(player, caravan);
+                plugin.getMessageService().send(player, "public-trade-opened", Map.of(
+                    "id", plugin.getCaravanService().getShortId(caravan),
+                    "name", caravan.name()
+                ));
+                return;
+            }
+
+            if (plugin.getConfigManager().isPhysicalStrangerMessageEnabled()) {
+                plugin.getMessageService().send(player, "public-trade-shop-plot-required");
+            }
         }
     }
 }

@@ -150,6 +150,14 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
         WHERE id = ?
         """;
 
+    private static final String UPDATE_TRADE_OPERATION = """
+        UPDATE trade_operations
+        SET item_stack = ?, amount_per_transaction = ?, price_currency_amount = ?,
+            max_total_amount = ?, fulfilled_amount = ?, reserved_inventory_slot = ?,
+            active = ?, updated_at = ?
+        WHERE id = ?
+        """;
+
     private static final String DELETE_TRADE_OPERATION = """
         DELETE FROM trade_operations
         WHERE id = ?
@@ -421,6 +429,34 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
             statement.setInt(1, active ? 1 : 0);
             statement.setString(2, updatedAt);
             statement.setString(3, tradeOperationId.toString());
+            statement.executeUpdate();
+        } catch (SQLException exception) {
+            throw new StorageException("Failed to update trade operation in SQLite.", exception);
+        }
+    }
+
+    @Override
+    public synchronized void updateTradeOperation(TradeOperationRecord tradeOperation) throws StorageException {
+        ensureInitialized();
+
+        try (PreparedStatement statement = connection.prepareStatement(UPDATE_TRADE_OPERATION)) {
+            statement.setString(1, ItemStackSerializationUtil.serializeItemStack(tradeOperation.itemStack()));
+            statement.setInt(2, tradeOperation.amountPerTransaction());
+            statement.setInt(3, tradeOperation.priceCurrencyAmount());
+            if (tradeOperation.maxTotalAmount() == null) {
+                statement.setNull(4, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(4, tradeOperation.maxTotalAmount());
+            }
+            statement.setInt(5, tradeOperation.fulfilledAmount());
+            if (tradeOperation.reservedInventorySlot() == null) {
+                statement.setNull(6, java.sql.Types.INTEGER);
+            } else {
+                statement.setInt(6, tradeOperation.reservedInventorySlot());
+            }
+            statement.setInt(7, tradeOperation.active() ? 1 : 0);
+            statement.setString(8, tradeOperation.updatedAt().toString());
+            statement.setString(9, tradeOperation.id().toString());
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new StorageException("Failed to update trade operation in SQLite.", exception);

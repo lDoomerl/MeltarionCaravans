@@ -142,6 +142,36 @@ public final class CaravanEntityService {
         }
     }
 
+    public Location getCaravanLocation(UUID caravanId) {
+        cleanupInvalidState(caravanId);
+
+        SpawnedCaravanEntities entities = spawnedCaravans.get(caravanId);
+        if (entities != null) {
+            Entity trader = Bukkit.getEntity(entities.traderId());
+            if (trader != null && trader.isValid() && !trader.isDead()) {
+                return trader.getLocation();
+            }
+            Entity llamaOne = Bukkit.getEntity(entities.llamaOneId());
+            if (llamaOne != null && llamaOne.isValid() && !llamaOne.isDead()) {
+                return llamaOne.getLocation();
+            }
+            Entity llamaTwo = Bukkit.getEntity(entities.llamaTwoId());
+            if (llamaTwo != null && llamaTwo.isValid() && !llamaTwo.isDead()) {
+                return llamaTwo.getLocation();
+            }
+        }
+
+        for (World world : Bukkit.getWorlds()) {
+            for (Entity entity : world.getEntities()) {
+                UUID found = findCaravanId(entity);
+                if (caravanId.equals(found)) {
+                    return entity.getLocation();
+                }
+            }
+        }
+        return null;
+    }
+
     private void configureTrader(WanderingTrader trader, CaravanRecord caravan) {
         configureLivingEntity(trader, caravan, CaravanEntityRole.TRADER, configManager.getPhysicalTraderNameFormat(), configManager.getPhysicalTraderHealth());
         trader.setRecipes(java.util.List.of());
