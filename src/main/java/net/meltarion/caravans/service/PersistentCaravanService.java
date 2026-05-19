@@ -286,6 +286,7 @@ public final class PersistentCaravanService implements CaravanService {
             null,
             null,
             false,
+            false,
             now,
             now
         );

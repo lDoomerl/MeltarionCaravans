@@ -38,6 +38,7 @@ public final class CaravanSetupListener implements Listener {
     private static final int BUY_CLOSE_SLOT = 53;
     private static final int ROUTE_BACK_SLOT = 45;
     private static final int ROUTE_ADD_SLOT = 46;
+    private static final int ROUTE_LOOP_SLOT = 47;
     private static final int ROUTE_START_SLOT = 48;
     private static final int ROUTE_STOP_SLOT = 49;
     private static final int ROUTE_CLEAR_SLOT = 50;
@@ -215,6 +216,7 @@ public final class CaravanSetupListener implements Listener {
             switch (event.getRawSlot()) {
                 case ROUTE_BACK_SLOT -> plugin.getCaravanSetupGuiService().openMainSetup(player, caravan);
                 case ROUTE_ADD_SLOT -> openTownSelection(player, caravan);
+                case ROUTE_LOOP_SLOT -> toggleRouteLoop(player, caravan, holder.getPage());
                 case ROUTE_START_SLOT -> startRoute(player, caravan);
                 case ROUTE_STOP_SLOT -> stopRoute(player, caravan);
                 case ROUTE_CLEAR_SLOT -> clearRoute(player, caravan);
@@ -402,6 +404,20 @@ public final class CaravanSetupListener implements Listener {
             "name", caravan.name()
         ));
         plugin.getCaravanSetupGuiService().openRouteSetup(player, plugin.getCaravanService().getCaravan(caravan.id()), 0);
+    }
+
+    private void toggleRouteLoop(Player player, CaravanRecord caravan, int page) {
+        var result = plugin.getCaravanRouteService().toggleLoopMode(caravan);
+        if (!result.success()) {
+            handleRouteFailure(player, result.failureReason());
+            return;
+        }
+
+        plugin.getMessageService().send(player, result.caravan().routeLoopEnabled() ? "route-loop-enabled" : "route-loop-disabled", Map.of(
+            "id", plugin.getCaravanService().getShortId(result.caravan()),
+            "name", result.caravan().name()
+        ));
+        plugin.getCaravanSetupGuiService().openRouteSetup(player, result.caravan(), page);
     }
 
     private void removeRouteStop(Player player, CaravanRecord caravan, int page, int rawSlot) {

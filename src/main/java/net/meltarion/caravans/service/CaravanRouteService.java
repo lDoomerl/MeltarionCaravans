@@ -17,32 +17,30 @@ import net.meltarion.caravans.model.CaravanStatus;
 import net.meltarion.caravans.storage.CaravanRouteStorage;
 import net.meltarion.caravans.storage.StorageException;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.World;
-import org.bukkit.entity.Player;
-import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitTask;
 
 public final class CaravanRouteService {
 
-    private final Plugin plugin;
+    private final org.bukkit.plugin.Plugin plugin;
     private final ConfigManager configManager;
     private final CaravanService caravanService;
     private final CaravanMovementService movementService;
-    private final TownyIntegrationService townyIntegrationService;
-    private final MessageService messageService;
+    private final NotificationService notificationService;
     private final CaravanRouteStorage storage;
     private final Logger logger;
     private final Map<UUID, List<CaravanRouteStopRecord>> stopsByCaravan = new ConcurrentHashMap<>();
+    private final Map<UUID, Instant> lastAttackAt = new ConcurrentHashMap<>();
 
     private BukkitTask routeTask;
 
     public CaravanRouteService(
-        Plugin plugin,
+        org.bukkit.plugin.Plugin plugin,
         ConfigManager configManager,
         CaravanService caravanService,
         CaravanMovementService movementService,
-        TownyIntegrationService townyIntegrationService,
-        MessageService messageService,
+        NotificationService notificationService,
         CaravanRouteStorage storage,
         Logger logger
     ) {
@@ -50,8 +48,7 @@ public final class CaravanRouteService {
         this.configManager = configManager;
         this.caravanService = caravanService;
         this.movementService = movementService;
-        this.townyIntegrationService = townyIntegrationService;
-        this.messageService = messageService;
+        this.notificationService = notificationService;
         this.storage = storage;
         this.logger = logger;
     }
@@ -73,6 +70,7 @@ public final class CaravanRouteService {
             routeTask.cancel();
             routeTask = null;
         }
+        lastAttackAt.clear();
     }
 
     public List<CaravanRouteStopRecord> getRouteStops(UUID caravanId) {
@@ -182,6 +180,24 @@ public final class CaravanRouteService {
         return CaravanRouteResult.success(cleared);
     }
 
+    public CaravanRouteResult toggleLoopMode(CaravanRecord caravan) {
+        if (!configManager.isRouteLoopAllowed()) {
+            return CaravanRouteResult.failure(CaravanRouteFailureReason.INVALID_STATE);
+        }
+
+        CaravanRecord latest = caravanService.getCaravan(caravan.id());
+        if (latest == null) {
+            return CaravanRouteResult.failure(CaravanRouteFailureReason.INVALID_STATE);
+        }
+
+        CaravanRecord updated = latest.withRouteLoopEnabled(!latest.routeLoopEnabled(), Instant.now());
+        CaravanMutationResult persisted = caravanService.updateCaravanRecord(updated);
+        if (!persisted.success()) {
+            return CaravanRouteResult.failure(CaravanRouteFailureReason.STORAGE_ERROR);
+        }
+        return CaravanRouteResult.success(persisted.caravan());
+    }
+
     public CaravanRouteResult startRoute(CaravanRecord caravan) {
         if (!configManager.isRouteEnabled()) {
             return CaravanRouteResult.failure(CaravanRouteFailureReason.DISABLED);
@@ -251,10 +267,8 @@ public final class CaravanRouteService {
 
         if (caravan.returningHomeAfterRoute()) {
             CaravanRecord finished = clearRouteRuntime(caravan, true);
-            Player owner = Bukkit.getPlayer(finished.ownerId());
-            if (owner != null && owner.isOnline()) {
-                messageService.send(owner, "route-finished", basePlaceholders(finished));
-            }
+            notificationService.sendPlayerMessage(finished.ownerId(), "route-arrived-home", basePlaceholders(finished));
+            notificationService.sendPlayerMessage(finished.ownerId(), "route-finished", basePlaceholders(finished));
             return;
         }
 
@@ -279,11 +293,16 @@ public final class CaravanRouteService {
             return;
         }
 
-        Player owner = Bukkit.getPlayer(updated.ownerId());
-        if (owner != null && owner.isOnline()) {
-            Map<String, String> placeholders = routePlaceholders(updated, stop);
-            messageService.send(owner, "route-arrived-stop", placeholders);
-            messageService.send(owner, "route-stop-timer-started", placeholders);
+        playStopEffects(updated);
+        Map<String, String> placeholders = routePlaceholders(updated, stop);
+        notificationService.sendPlayerMessage(updated.ownerId(), "route-arrived-stop", placeholders);
+        notificationService.sendPlayerMessage(updated.ownerId(), "route-stop-timer-started", placeholders);
+    }
+
+    public void handleAttacked(CaravanRecord caravan) {
+        lastAttackAt.put(caravan.id(), Instant.now());
+        if (caravan.routeRunning() && configManager.shouldAutoResumeAfterAttack()) {
+            notificationService.sendPlayerMessage(caravan.ownerId(), "route-resume-scheduled", basePlaceholders(caravan));
         }
     }
 
@@ -294,15 +313,17 @@ public final class CaravanRouteService {
 
     public void discardCaravanState(UUID caravanId) {
         stopsByCaravan.remove(caravanId);
+        lastAttackAt.remove(caravanId);
     }
 
     private void tick() {
         Instant now = Instant.now();
         for (CaravanRecord caravan : caravanService.getAllCaravans()) {
-            if (!caravan.routeRunning() || caravan.currentStopEndsAt() == null) {
+            if (caravan.routeRunning() && caravan.status() == CaravanStatus.ATTACKED) {
+                attemptAutoResume(caravan, now);
                 continue;
             }
-            if (caravan.status() == CaravanStatus.ATTACKED) {
+            if (!caravan.routeRunning() || caravan.currentStopEndsAt() == null) {
                 continue;
             }
             if (now.isBefore(caravan.currentStopEndsAt())) {
@@ -322,10 +343,7 @@ public final class CaravanRouteService {
 
         int currentIndex = caravan.currentRouteStopIndex() == null ? 0 : caravan.currentRouteStopIndex();
         CaravanRouteStopRecord currentStop = currentIndex >= 0 && currentIndex < stops.size() ? stops.get(currentIndex) : null;
-        Player owner = Bukkit.getPlayer(caravan.ownerId());
-        if (owner != null && owner.isOnline()) {
-            messageService.send(owner, "route-stop-timer-finished", routePlaceholders(caravan, currentStop));
-        }
+        notificationService.sendPlayerMessage(caravan.ownerId(), "route-stop-timer-finished", routePlaceholders(caravan, currentStop));
 
         if (currentIndex + 1 < stops.size()) {
             CaravanRouteStopRecord nextStop = stops.get(currentIndex + 1);
@@ -342,8 +360,29 @@ public final class CaravanRouteService {
             }
 
             CaravanMovementResult movementResult = movementService.startMovement(persisted.caravan(), world, nextStop.x(), nextStop.z(), CaravanStatus.TRAVELING);
-            if (movementResult.success() && owner != null && owner.isOnline()) {
-                messageService.send(owner, "route-started", routePlaceholders(movementResult.caravan(), nextStop));
+            if (movementResult.success()) {
+                notificationService.sendPlayerMessage(caravan.ownerId(), "route-next-stop", routePlaceholders(movementResult.caravan(), nextStop));
+            }
+            return;
+        }
+
+        if (caravan.routeLoopEnabled() && configManager.isRouteLoopAllowed()) {
+            CaravanRouteStopRecord firstStop = stops.getFirst();
+            World world = Bukkit.getWorld(firstStop.worldName());
+            if (world == null) {
+                clearRouteRuntime(caravan, false);
+                return;
+            }
+
+            CaravanRecord loopPrepared = caravan.withRouteState(0, true, null, null, false, Instant.now());
+            CaravanMutationResult persisted = caravanService.updateCaravanRecord(loopPrepared);
+            if (!persisted.success()) {
+                return;
+            }
+
+            CaravanMovementResult loopResult = movementService.startMovement(persisted.caravan(), world, firstStop.x(), firstStop.z(), CaravanStatus.TRAVELING);
+            if (loopResult.success()) {
+                notificationService.sendPlayerMessage(caravan.ownerId(), "route-next-stop", routePlaceholders(loopResult.caravan(), firstStop));
             }
             return;
         }
@@ -354,10 +393,7 @@ public final class CaravanRouteService {
             return;
         }
 
-        if (owner != null && owner.isOnline()) {
-            messageService.send(owner, "route-returning-home", basePlaceholders(persisted.caravan()));
-        }
-
+        notificationService.sendPlayerMessage(caravan.ownerId(), "route-returning-home", basePlaceholders(persisted.caravan()));
         CaravanMovementResult result = movementService.returnHome(persisted.caravan());
         if (!result.success()) {
             clearRouteRuntime(persisted.caravan(), false);
@@ -389,6 +425,67 @@ public final class CaravanRouteService {
         return result.success() ? result.caravan() : caravan;
     }
 
+    private void attemptAutoResume(CaravanRecord caravan, Instant now) {
+        if (!configManager.shouldAutoResumeAfterAttack() || caravan.hp() <= 0) {
+            return;
+        }
+
+        Instant attackedAt = lastAttackAt.get(caravan.id());
+        if (attackedAt == null || Duration.between(attackedAt, now).getSeconds() < configManager.getAutoResumeDelaySeconds()) {
+            return;
+        }
+
+        lastAttackAt.remove(caravan.id());
+        CaravanRecord latest = caravanService.getCaravan(caravan.id());
+        if (latest == null || latest.hp() <= 0) {
+            return;
+        }
+
+        if (latest.returningHomeAfterRoute()) {
+            CaravanMovementResult result = movementService.returnHome(latest);
+            if (result.success()) {
+                notificationService.sendPlayerMessage(latest.ownerId(), "route-resumed", basePlaceholders(result.caravan()));
+            }
+            return;
+        }
+
+        if (latest.hasTargetPosition() && latest.targetWorldName() != null && latest.targetX() != null && latest.targetZ() != null) {
+            World world = Bukkit.getWorld(latest.targetWorldName());
+            if (world == null) {
+                return;
+            }
+            CaravanMovementResult result = movementService.startMovement(latest, world, latest.targetX(), latest.targetZ(), CaravanStatus.TRAVELING);
+            if (result.success()) {
+                notificationService.sendPlayerMessage(latest.ownerId(), "route-resumed", basePlaceholders(result.caravan()));
+            }
+            return;
+        }
+
+        if (latest.currentStopEndsAt() != null) {
+            CaravanRecord resumed = latest.withMovement(
+                CaravanStatus.STOPPED,
+                latest.worldName(),
+                latest.virtualX(),
+                latest.virtualY(),
+                latest.virtualZ(),
+                null,
+                null,
+                null,
+                null,
+                latest.movementStartedAt(),
+                Instant.now(),
+                latest.speedBlocksPerSecond(),
+                latest.etaSeconds(),
+                latest.physicalSpawned(),
+                Instant.now()
+            );
+            CaravanMutationResult persisted = caravanService.updateCaravanRecord(resumed);
+            if (persisted.success()) {
+                notificationService.sendPlayerMessage(latest.ownerId(), "route-resumed", basePlaceholders(persisted.caravan()));
+            }
+        }
+    }
+
     private void persistStopOrder(List<CaravanRouteStopRecord> stops) throws StorageException {
         sortStops(stops);
         Instant now = Instant.now();
@@ -413,7 +510,9 @@ public final class CaravanRouteService {
     private Map<String, String> basePlaceholders(CaravanRecord caravan) {
         return Map.of(
             "id", caravan.id().toString().substring(0, 8),
-            "name", caravan.name()
+            "name", caravan.name(),
+            "status", caravan.status().name(),
+            "eta", caravan.etaSeconds() == null ? "0" : String.valueOf(caravan.etaSeconds())
         );
     }
 
@@ -428,8 +527,25 @@ public final class CaravanRouteService {
             "town", town,
             "duration", duration,
             "order", order,
+            "stop", order,
             "eta", caravan.etaSeconds() == null ? "0" : String.valueOf(caravan.etaSeconds()),
-            "time_left", String.valueOf(timeLeft)
+            "time_left", String.valueOf(timeLeft),
+            "status", caravan.status().name()
         );
+    }
+
+    private void playStopEffects(CaravanRecord caravan) {
+        if (!configManager.areRouteStopEffectsEnabled() || caravan.worldName() == null || caravan.virtualX() == null || caravan.virtualY() == null || caravan.virtualZ() == null) {
+            return;
+        }
+
+        World world = Bukkit.getWorld(caravan.worldName());
+        if (world == null) {
+            return;
+        }
+
+        Location location = new Location(world, caravan.virtualX(), caravan.virtualY(), caravan.virtualZ());
+        world.spawnParticle(configManager.getRouteStopEffectParticle(), location, 6, 0.4D, 0.6D, 0.4D, 0.01D);
+        world.playSound(location, configManager.getRouteStopEffectSound(), 0.7F, 1.0F);
     }
 }

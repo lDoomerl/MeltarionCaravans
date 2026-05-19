@@ -57,11 +57,16 @@ movement:
   max-y-adjust-per-update: 8
   pause-when-attacked: true
   attacked-notification-cooldown-seconds: 30
+  auto-resume-after-attack: true
+  auto-resume-delay-seconds: 120
   debug: false
 
 projection:
   spawn-cooldown-seconds: 5
   despawn-cooldown-seconds: 5
+  smooth-follow-distance: 8
+  teleport-correction-distance: 24
+  movement-sync-interval-ticks: 20
 
 interaction:
   cooldown-millis: 500
@@ -77,6 +82,21 @@ route:
   allow-neutral-towns: true
   allow-enemy-towns: false
   random-shop-plot-selection: true
+  allow-loop-routes: true
+  stop-effects:
+    enabled: true
+    particle: CAMPFIRE_COSY_SMOKE
+    sound: ENTITY_WANDERING_TRADER_YES
+
+notifications:
+  queue-offline-notifications: true
+  max-queued-per-player: 20
+
+dynmap:
+  enabled: true
+  update-interval-seconds: 10
+  marker-set-id: meltarion_caravans
+  show-eta: true
 
 physical-caravan:
   enabled: true
@@ -238,6 +258,13 @@ messages:
   route-stop-timer-finished: "&eStop timer finished for &f%town%&e. Continuing route."
   route-returning-home: "&aCaravan &f%name% &7(%id%) &ais returning home."
   route-finished: "&aCaravan &f%name% &7(%id%) &afinished its route."
+  route-loop-enabled: "&aLoop mode enabled for &f%name%&a."
+  route-loop-disabled: "&eLoop mode disabled for &f%name%&e."
+  route-resumed: "&aCaravan &f%name% &aresumed its route."
+  route-resume-scheduled: "&eCaravan &f%name% &ewill try to resume its route automatically."
+  route-next-stop: "&aCaravan &f%name% &ais heading to stop &f#%stop%&a in &f%town%&a. ETA: &f%eta%&a s."
+  route-arrived-home: "&aCaravan &f%name% &ahas arrived home."
+  route-offline-notification-summary: "&7You have &f%amount%&7 queued caravan notification(s)."
   route-no-stops: "&cThis caravan has no configured route stops."
   route-towny-missing: "&cTowny is required for route setup, but it is not available."
   route-no-available-towns: "&cNo available Towny towns with Shop Plots were found."
@@ -249,6 +276,8 @@ messages:
   route-public-trade-only-when-stopped: "&cThis caravan can trade publicly only while stopped."
   route-max-stops-reached: "&cThis caravan has reached its maximum number of route stops."
   route-not-running: "&cThis caravan route is not currently running."
+  dynmap-disabled: "&7Dynmap integration is disabled."
+  dynmap-enabled: "&7Dynmap integration is enabled."
   movement-position-info:
     - "&6Caravan Position"
     - "&7ID: &f%id%"

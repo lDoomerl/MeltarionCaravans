@@ -34,6 +34,7 @@ public final class CaravanMovementService {
     private final Map<UUID, Instant> lastProjectionDespawnAt = new ConcurrentHashMap<>();
 
     private BukkitTask movementTask;
+    private BukkitTask projectionSyncTask;
     private Instant lastPeriodicSaveAt;
     private CaravanRouteService caravanRouteService;
 
@@ -67,6 +68,7 @@ public final class CaravanMovementService {
 
         long periodTicks = configManager.getMovementTickIntervalSeconds() * 20L;
         this.movementTask = Bukkit.getScheduler().runTaskTimer(plugin, this::tick, periodTicks, periodTicks);
+        this.projectionSyncTask = Bukkit.getScheduler().runTaskTimer(plugin, this::syncProjectedEntities, configManager.getProjectionMovementSyncIntervalTicks(), configManager.getProjectionMovementSyncIntervalTicks());
     }
 
     public void setCaravanRouteService(CaravanRouteService caravanRouteService) {
@@ -77,6 +79,10 @@ public final class CaravanMovementService {
         if (movementTask != null) {
             movementTask.cancel();
             movementTask = null;
+        }
+        if (projectionSyncTask != null) {
+            projectionSyncTask.cancel();
+            projectionSyncTask = null;
         }
         if (configManager.shouldDespawnPhysicalCaravansOnDisable()) {
             Instant now = Instant.now();
@@ -281,6 +287,7 @@ public final class CaravanMovementService {
             current.currentStopStartedAt(),
             current.currentStopEndsAt(),
             current.returningHomeAfterRoute(),
+            current.routeLoopEnabled(),
             caravan.createdAt(),
             now
         );
@@ -460,7 +467,7 @@ public final class CaravanMovementService {
         }
 
         if (actuallySpawned && hasDistantPlayers && chunkLoaded) {
-            caravanEntityService.syncCaravanProjection(caravan.id(), location);
+            caravanEntityService.syncCaravanProjection(caravan.id(), location, projectionDirection(caravan), caravan.status() == CaravanStatus.STOPPED);
             if (!caravan.physicalSpawned()) {
                 return caravan.withPhysicalSpawned(true, now);
             }
@@ -527,6 +534,47 @@ public final class CaravanMovementService {
         }
         double distance = new Vector(targetX - currentX, targetY - currentY, targetZ - currentZ).length();
         return Math.max(0, (int) Math.ceil(distance / speed));
+    }
+
+    private void syncProjectedEntities() {
+        for (CaravanRecord caravan : new ArrayList<>(runtimeCaravans.values())) {
+            if (!caravan.physicalSpawned() || !caravan.hasVirtualPosition() || caravan.worldName() == null) {
+                continue;
+            }
+
+            World world = Bukkit.getWorld(caravan.worldName());
+            if (world == null) {
+                continue;
+            }
+
+            Location location = new Location(world, caravan.virtualX(), caravan.virtualY(), caravan.virtualZ());
+            int chunkX = location.getBlockX() >> 4;
+            int chunkZ = location.getBlockZ() >> 4;
+            if (!world.isChunkLoaded(chunkX, chunkZ) || !caravanEntityService.isSpawned(caravan.id())) {
+                continue;
+            }
+
+            boolean nearby = world.getPlayers().stream()
+                .filter(Player::isOnline)
+                .anyMatch(player -> player.getLocation().distanceSquared(location) <= Math.pow(configManager.getPhysicalDespawnRadius(), 2));
+            if (!nearby) {
+                continue;
+            }
+
+            caravanEntityService.syncCaravanProjection(caravan.id(), location, projectionDirection(caravan), caravan.status() == CaravanStatus.STOPPED);
+        }
+    }
+
+    private Vector projectionDirection(CaravanRecord caravan) {
+        if (!caravan.hasTargetPosition() || caravan.virtualX() == null || caravan.virtualY() == null || caravan.virtualZ() == null
+            || caravan.targetX() == null || caravan.targetY() == null || caravan.targetZ() == null) {
+            return new Vector();
+        }
+        return new Vector(
+            caravan.targetX() - caravan.virtualX(),
+            caravan.targetY() - caravan.virtualY(),
+            caravan.targetZ() - caravan.virtualZ()
+        );
     }
 
     private boolean persistRuntime(CaravanRecord caravan) {

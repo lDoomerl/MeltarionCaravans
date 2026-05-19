@@ -33,6 +33,7 @@ public record CaravanRecord(
     Instant currentStopStartedAt,
     Instant currentStopEndsAt,
     boolean returningHomeAfterRoute,
+    boolean routeLoopEnabled,
     Instant createdAt,
     Instant updatedAt
 ) {
@@ -80,6 +81,7 @@ public record CaravanRecord(
             currentStopStartedAt,
             currentStopEndsAt,
             returningHomeAfterRoute,
+            routeLoopEnabled,
             createdAt,
             newUpdatedAt
         );
@@ -116,6 +118,7 @@ public record CaravanRecord(
             currentStopStartedAt,
             currentStopEndsAt,
             returningHomeAfterRoute,
+            routeLoopEnabled,
             createdAt,
             newUpdatedAt
         );
@@ -168,6 +171,7 @@ public record CaravanRecord(
             currentStopStartedAt,
             currentStopEndsAt,
             returningHomeAfterRoute,
+            routeLoopEnabled,
             createdAt,
             newUpdatedAt
         );
@@ -204,6 +208,7 @@ public record CaravanRecord(
             currentStopStartedAt,
             currentStopEndsAt,
             returningHomeAfterRoute,
+            routeLoopEnabled,
             createdAt,
             newUpdatedAt
         );
@@ -240,6 +245,7 @@ public record CaravanRecord(
             currentStopStartedAt,
             currentStopEndsAt,
             returningHomeAfterRoute,
+            routeLoopEnabled,
             createdAt,
             newUpdatedAt
         );
@@ -283,6 +289,44 @@ public record CaravanRecord(
             updatedCurrentStopStartedAt,
             updatedCurrentStopEndsAt,
             updatedReturningHomeAfterRoute,
+            routeLoopEnabled,
+            createdAt,
+            newUpdatedAt
+        );
+    }
+
+    public CaravanRecord withRouteLoopEnabled(boolean updatedRouteLoopEnabled, Instant newUpdatedAt) {
+        return new CaravanRecord(
+            id,
+            ownerId,
+            ownerName,
+            name,
+            status,
+            hp,
+            maxHp,
+            worldName,
+            virtualX,
+            virtualY,
+            virtualZ,
+            targetWorldName,
+            targetX,
+            targetY,
+            targetZ,
+            movementStartedAt,
+            movementUpdatedAt,
+            speedBlocksPerSecond,
+            etaSeconds,
+            physicalSpawned,
+            homeWorldName,
+            homeX,
+            homeY,
+            homeZ,
+            currentRouteStopIndex,
+            routeRunning,
+            currentStopStartedAt,
+            currentStopEndsAt,
+            returningHomeAfterRoute,
+            updatedRouteLoopEnabled,
             createdAt,
             newUpdatedAt
         );

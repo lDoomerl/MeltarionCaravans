@@ -300,6 +300,76 @@ public final class ConfigManager {
         return config.getBoolean("route.random-shop-plot-selection", true);
     }
 
+    public boolean isRouteLoopAllowed() {
+        return config.getBoolean("route.allow-loop-routes", true);
+    }
+
+    public boolean areRouteStopEffectsEnabled() {
+        return config.getBoolean("route.stop-effects.enabled", true);
+    }
+
+    public org.bukkit.Particle getRouteStopEffectParticle() {
+        String configured = config.getString("route.stop-effects.particle", "CAMPFIRE_COSY_SMOKE");
+        try {
+            return org.bukkit.Particle.valueOf(configured.toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            return org.bukkit.Particle.CAMPFIRE_COSY_SMOKE;
+        }
+    }
+
+    public org.bukkit.Sound getRouteStopEffectSound() {
+        String configured = config.getString("route.stop-effects.sound", "ENTITY_WANDERING_TRADER_YES");
+        try {
+            return org.bukkit.Sound.valueOf(configured.toUpperCase(java.util.Locale.ROOT));
+        } catch (IllegalArgumentException exception) {
+            return org.bukkit.Sound.ENTITY_WANDERING_TRADER_YES;
+        }
+    }
+
+    public double getProjectionSmoothFollowDistance() {
+        return Math.max(0.5D, config.getDouble("projection.smooth-follow-distance", 8.0D));
+    }
+
+    public double getProjectionTeleportCorrectionDistance() {
+        return Math.max(getProjectionSmoothFollowDistance(), config.getDouble("projection.teleport-correction-distance", 24.0D));
+    }
+
+    public long getProjectionMovementSyncIntervalTicks() {
+        return Math.max(1L, config.getLong("projection.movement-sync-interval-ticks", 20L));
+    }
+
+    public boolean shouldQueueOfflineNotifications() {
+        return config.getBoolean("notifications.queue-offline-notifications", true);
+    }
+
+    public int getMaxQueuedNotificationsPerPlayer() {
+        return Math.max(1, config.getInt("notifications.max-queued-per-player", 20));
+    }
+
+    public boolean shouldAutoResumeAfterAttack() {
+        return config.getBoolean("movement.auto-resume-after-attack", true);
+    }
+
+    public int getAutoResumeDelaySeconds() {
+        return Math.max(5, config.getInt("movement.auto-resume-delay-seconds", 120));
+    }
+
+    public boolean isDynmapEnabled() {
+        return config.getBoolean("dynmap.enabled", true);
+    }
+
+    public int getDynmapUpdateIntervalSeconds() {
+        return Math.max(5, config.getInt("dynmap.update-interval-seconds", 10));
+    }
+
+    public String getDynmapMarkerSetId() {
+        return config.getString("dynmap.marker-set-id", "meltarion_caravans");
+    }
+
+    public boolean shouldShowDynmapEta() {
+        return config.getBoolean("dynmap.show-eta", true);
+    }
+
     public String getMessage(String path) {
         return config.getString("messages." + path, "");
     }

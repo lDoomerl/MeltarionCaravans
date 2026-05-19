@@ -181,11 +181,20 @@ public final class CaravanSetupGuiService {
         int start = page * ROUTE_STOPS_PER_PAGE;
         int end = Math.min(start + ROUTE_STOPS_PER_PAGE, stops.size());
         for (int slot = 0; slot < end - start; slot++) {
-            inventory.setItem(slot, createRouteStopItem(stops.get(start + slot)));
+            inventory.setItem(slot, createRouteStopItem(caravan, stops.get(start + slot)));
         }
 
         inventory.setItem(45, createMenuItem(Material.ARROW, "&eBack", List.of("&7Return to caravan setup.")));
         inventory.setItem(46, createMenuItem(Material.EMERALD, "&aAdd Route Stop", List.of("&7Choose a Towny town and stop time.")));
+        inventory.setItem(47, createMenuItem(
+            caravan.routeLoopEnabled() ? Material.LIME_DYE : Material.GRAY_DYE,
+            caravan.routeLoopEnabled() ? "&aLoop Route: ON" : "&cLoop Route: OFF",
+            List.of(
+                "&7Loop allowed: &f" + configManager.isRouteLoopAllowed(),
+                "&7Estimated route duration: &f" + estimateRouteDurationMinutes(caravan) + " min",
+                "&eClick to toggle."
+            )
+        ));
         inventory.setItem(48, createMenuItem(Material.MINECART, "&aStart Route", List.of("&7Begin running this caravan route.")));
         inventory.setItem(49, createMenuItem(Material.REDSTONE, "&cStop Route", List.of("&7Stop the running route.")));
         inventory.setItem(50, createMenuItem(Material.LAVA_BUCKET, "&cClear Route", List.of("&7Remove all configured route stops.")));
@@ -320,15 +329,20 @@ public final class CaravanSetupGuiService {
         return itemStack;
     }
 
-    private ItemStack createRouteStopItem(CaravanRouteStopRecord stop) {
+    private ItemStack createRouteStopItem(CaravanRecord caravan, CaravanRouteStopRecord stop) {
+        boolean active = caravan.routeRunning()
+            && caravan.currentRouteStopIndex() != null
+            && caravan.currentRouteStopIndex() == stop.stopOrder()
+            && !caravan.returningHomeAfterRoute();
         return createMenuItem(
-            Material.FILLED_MAP,
-            "&6Stop #" + (stop.stopOrder() + 1) + " &7- &f" + stop.townName(),
+            active ? Material.COMPASS : Material.FILLED_MAP,
+            (active ? "&a" : "&6") + "Stop #" + (stop.stopOrder() + 1) + " &7- &f" + stop.townName(),
             List.of(
                 "&7Town: &f" + stop.townName(),
                 "&7World: &f" + stop.worldName(),
                 "&7Position: &f" + String.format(Locale.US, "%.1f %.1f %.1f", stop.x(), stop.y(), stop.z()),
                 "&7Duration: &f" + Duration.ofSeconds(stop.stopDurationSeconds()).toMinutes() + " min",
+                "&7Active Stop: &f" + (active ? "yes" : "no"),
                 "&eShift-click to remove."
             )
         );
@@ -350,6 +364,12 @@ public final class CaravanSetupGuiService {
                 "&eClick to pick a random Shop Plot."
             )
         );
+    }
+
+    private long estimateRouteDurationMinutes(CaravanRecord caravan) {
+        return caravanRouteService.getRouteStops(caravan.id()).stream()
+            .mapToLong(stop -> Duration.ofSeconds(stop.stopDurationSeconds()).toMinutes())
+            .sum();
     }
 
     private String prettifyMaterial(Material material) {

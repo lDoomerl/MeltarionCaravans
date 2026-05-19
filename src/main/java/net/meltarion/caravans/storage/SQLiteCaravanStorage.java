@@ -56,6 +56,7 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
             current_stop_started_at TEXT,
             current_stop_ends_at TEXT,
             returning_home_after_route INTEGER NOT NULL DEFAULT 0,
+            route_loop_enabled INTEGER NOT NULL DEFAULT 0,
             created_at TEXT NOT NULL,
             updated_at TEXT NOT NULL
         )
@@ -142,6 +143,7 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
                movement_started_at, movement_updated_at, speed_blocks_per_second, eta_seconds, physical_spawned,
                home_world_name, home_x, home_y, home_z,
                current_route_stop_index, route_running, current_stop_started_at, current_stop_ends_at, returning_home_after_route,
+               route_loop_enabled,
                created_at, updated_at
         FROM caravans
         ORDER BY created_at ASC
@@ -155,9 +157,10 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
             movement_started_at, movement_updated_at, speed_blocks_per_second, eta_seconds, physical_spawned,
             home_world_name, home_x, home_y, home_z,
             current_route_stop_index, route_running, current_stop_started_at, current_stop_ends_at, returning_home_after_route,
+            route_loop_enabled,
             created_at, updated_at
         )
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """;
 
     private static final String RENAME_CARAVAN = """
@@ -185,6 +188,7 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
             movement_started_at = ?, movement_updated_at = ?, speed_blocks_per_second = ?, eta_seconds = ?, physical_spawned = ?,
             home_world_name = ?, home_x = ?, home_y = ?, home_z = ?,
             current_route_stop_index = ?, route_running = ?, current_stop_started_at = ?, current_stop_ends_at = ?, returning_home_after_route = ?,
+            route_loop_enabled = ?,
             updated_at = ?
         WHERE id = ?
         """;
@@ -371,8 +375,9 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
             setNullableInstant(statement, 27, caravan.currentStopStartedAt());
             setNullableInstant(statement, 28, caravan.currentStopEndsAt());
             statement.setInt(29, caravan.returningHomeAfterRoute() ? 1 : 0);
-            statement.setString(30, caravan.createdAt().toString());
-            statement.setString(31, caravan.updatedAt().toString());
+            statement.setInt(30, caravan.routeLoopEnabled() ? 1 : 0);
+            statement.setString(31, caravan.createdAt().toString());
+            statement.setString(32, caravan.updatedAt().toString());
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new StorageException("Failed to insert caravan into SQLite.", exception);
@@ -411,8 +416,9 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
             setNullableInstant(statement, 25, caravan.currentStopStartedAt());
             setNullableInstant(statement, 26, caravan.currentStopEndsAt());
             statement.setInt(27, caravan.returningHomeAfterRoute() ? 1 : 0);
-            statement.setString(28, caravan.updatedAt().toString());
-            statement.setString(29, caravan.id().toString());
+            statement.setInt(28, caravan.routeLoopEnabled() ? 1 : 0);
+            statement.setString(29, caravan.updatedAt().toString());
+            statement.setString(30, caravan.id().toString());
             statement.executeUpdate();
         } catch (SQLException exception) {
             throw new StorageException("Failed to update caravan in SQLite.", exception);
@@ -806,6 +812,7 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
                 parseNullableInstant(resultSet.getString("current_stop_started_at")),
                 parseNullableInstant(resultSet.getString("current_stop_ends_at")),
                 resultSet.getInt("returning_home_after_route") == 1,
+                resultSet.getInt("route_loop_enabled") == 1,
                 Instant.parse(resultSet.getString("created_at")),
                 Instant.parse(resultSet.getString("updated_at"))
             );
@@ -879,6 +886,7 @@ public final class SQLiteCaravanStorage implements CaravanStorage, CaravanInvent
         addCaravanColumnIfMissing(statement, columns, "current_stop_started_at", "ALTER TABLE caravans ADD COLUMN current_stop_started_at TEXT");
         addCaravanColumnIfMissing(statement, columns, "current_stop_ends_at", "ALTER TABLE caravans ADD COLUMN current_stop_ends_at TEXT");
         addCaravanColumnIfMissing(statement, columns, "returning_home_after_route", "ALTER TABLE caravans ADD COLUMN returning_home_after_route INTEGER NOT NULL DEFAULT 0");
+        addCaravanColumnIfMissing(statement, columns, "route_loop_enabled", "ALTER TABLE caravans ADD COLUMN route_loop_enabled INTEGER NOT NULL DEFAULT 0");
     }
 
     private void addCaravanColumnIfMissing(Statement statement, Set<String> existingColumns, String column, String sql) throws SQLException {

@@ -68,6 +68,7 @@ public final class CaravanPhysicalEntityDamageListener implements Listener {
 
         if (plugin.getConfigManager().shouldPauseMovementWhenAttacked()) {
             updatedCaravan = plugin.getCaravanMovementService().handleAttacked(updatedCaravan);
+            plugin.getCaravanRouteService().handleAttacked(updatedCaravan);
         }
 
         notifyDamager(event, updatedCaravan, damage);
@@ -104,6 +105,12 @@ public final class CaravanPhysicalEntityDamageListener implements Listener {
             plugin.getMessageService().send(owner, "physical-owner-notified-attacked", placeholders(caravan, 0));
             if (plugin.getConfigManager().shouldPauseMovementWhenAttacked()) {
                 plugin.getMessageService().send(owner, "movement-paused-attacked", placeholders(caravan, 0));
+            }
+        } else {
+            ownerNotificationCooldowns.put(caravan.id(), now);
+            plugin.getNotificationService().sendPlayerMessage(caravan.ownerId(), "physical-owner-notified-attacked", placeholders(caravan, 0));
+            if (plugin.getConfigManager().shouldPauseMovementWhenAttacked()) {
+                plugin.getNotificationService().sendPlayerMessage(caravan.ownerId(), "movement-paused-attacked", placeholders(caravan, 0));
             }
         }
     }

@@ -19,12 +19,14 @@ import org.bukkit.attribute.Attribute;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
+import org.bukkit.entity.Mob;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.TraderLlama;
 import org.bukkit.entity.WanderingTrader;
 import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
+import org.bukkit.util.Vector;
 
 public final class CaravanEntityService {
 
@@ -146,15 +148,15 @@ public final class CaravanEntityService {
         );
     }
 
-    public synchronized void syncCaravanProjection(UUID caravanId, Location baseLocation) {
+    public synchronized void syncCaravanProjection(UUID caravanId, Location baseLocation, Vector direction, boolean stationary) {
         SpawnedCaravanEntities entities = spawnedCaravans.get(caravanId);
         if (entities == null || baseLocation.getWorld() == null) {
             return;
         }
 
-        teleportEntityIfNeeded(entities.traderId(), baseLocation.clone().add(0.5D, 0.0D, 0.5D));
-        teleportEntityIfNeeded(entities.llamaOneId(), baseLocation.clone().add(1.5D, 0.0D, 0.5D));
-        teleportEntityIfNeeded(entities.llamaTwoId(), baseLocation.clone().add(-0.5D, 0.0D, 0.5D));
+        syncEntity(entities.traderId(), baseLocation.clone().add(0.5D, 0.0D, 0.5D), direction, stationary);
+        syncEntity(entities.llamaOneId(), baseLocation.clone().add(1.5D, 0.0D, 0.5D), direction, stationary);
+        syncEntity(entities.llamaTwoId(), baseLocation.clone().add(-0.5D, 0.0D, 0.5D), direction, stationary);
     }
 
     public UUID findCaravanId(Entity entity) {
@@ -227,7 +229,7 @@ public final class CaravanEntityService {
     private void configureLivingEntity(LivingEntity entity, CaravanRecord caravan, CaravanEntityRole role, String nameFormat, double maxHealth) {
         entity.setPersistent(true);
         entity.setRemoveWhenFarAway(false);
-        entity.setAI(false);
+        entity.setAI(true);
         entity.setCollidable(false);
         entity.customName(LEGACY_SERIALIZER.deserialize(
             nameFormat
@@ -293,13 +295,73 @@ public final class CaravanEntityService {
         }
     }
 
-    private void teleportEntityIfNeeded(UUID entityId, Location location) {
+    private void syncEntity(UUID entityId, Location target, Vector direction, boolean stationary) {
         Entity entity = Bukkit.getEntity(entityId);
-        if (entity == null || !entity.isValid() || entity.isDead()) {
+        if (!(entity instanceof LivingEntity livingEntity) || !entity.isValid() || entity.isDead()) {
             return;
         }
-        if (!entity.getWorld().equals(location.getWorld()) || entity.getLocation().distanceSquared(location) > 16.0D) {
-            entity.teleport(location);
+
+        if (!entity.getWorld().equals(target.getWorld())) {
+            entity.teleport(target);
+            return;
+        }
+
+        if (livingEntity instanceof Mob mob) {
+            mob.setAI(!stationary);
+        }
+
+        Location current = entity.getLocation();
+        Vector offset = target.toVector().subtract(current.toVector());
+        double distance = offset.length();
+        Vector normalizedDirection = direction == null || direction.lengthSquared() <= 0.0001D
+            ? offset.clone()
+            : direction.clone();
+
+        if (normalizedDirection.lengthSquared() > 0.0001D) {
+            normalizedDirection.normalize();
+            float yaw = (float) Math.toDegrees(Math.atan2(-normalizedDirection.getX(), normalizedDirection.getZ()));
+            entity.setRotation(yaw, 0.0F);
+        }
+
+        if (stationary) {
+            entity.setVelocity(new Vector());
+            if (distance > 1.5D) {
+                entity.teleport(target);
+            }
+            return;
+        }
+
+        if (distance >= configManager.getProjectionTeleportCorrectionDistance()) {
+            entity.teleport(target);
+            return;
+        }
+
+        if (distance <= 0.75D) {
+            entity.setVelocity(new Vector());
+            return;
+        }
+
+        if (livingEntity instanceof Mob mob && tryPathfind(mob, target)) {
+            if (distance <= configManager.getProjectionSmoothFollowDistance()) {
+                entity.setVelocity(offset.normalize().multiply(0.18D));
+            }
+            return;
+        }
+
+        Vector velocity = offset.normalize().multiply(distance <= configManager.getProjectionSmoothFollowDistance() ? 0.22D : 0.35D);
+        entity.setVelocity(velocity);
+    }
+
+    private boolean tryPathfind(Mob mob, Location target) {
+        try {
+            Object pathfinder = mob.getClass().getMethod("getPathfinder").invoke(mob);
+            if (pathfinder == null) {
+                return false;
+            }
+            pathfinder.getClass().getMethod("moveTo", Location.class, double.class).invoke(pathfinder, target, 1.0D);
+            return true;
+        } catch (ReflectiveOperationException ignored) {
+            return false;
         }
     }
 
