@@ -127,6 +127,17 @@ currency-item: GOLD_INGOT
 - marker-set-id;
 - показ ETA.
 
+### placeholderapi
+
+Настройки интеграции с PlaceholderAPI:
+
+- `enabled`
+- `empty-value`
+- `eta-format`
+- `hp-decimals`
+
+Если PlaceholderAPI отсутствует, этот раздел не ломает запуск плагина. Expansion просто не регистрируется.
+
 ### physical-caravan
 
 Настройки физической проекции:
@@ -161,7 +172,7 @@ caravan.health — единственный реальный источник HP
 Каждый из трёх файлов содержит:
 
 ```yml
-config-version: 1
+config-version: 2
 ```
 
 Этот ключ нужен для безопасного обновления ресурсов между версиями плагина.

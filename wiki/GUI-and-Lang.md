@@ -29,6 +29,8 @@ gui:
 - уведомления;
 - debug/info строки.
 
+PlaceholderAPI настраивается не через `lang.yml`, а через раздел `placeholderapi` в `config.yml`.
+
 Пример:
 
 ```yml
@@ -85,3 +87,11 @@ messages:
 ```
 
 Если не хотите цвет, просто уберите коды.
+
+## Что не надо менять
+
+Не меняйте:
+
+- internal keys в `lang.yml`;
+- internal keys в `gui.yml`;
+- имена PlaceholderAPI-параметров.

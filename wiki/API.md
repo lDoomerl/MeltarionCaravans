@@ -14,8 +14,9 @@ net.meltarion.caravans.api.MeltarionCaravansApi
 
 - API только для чтения;
 - API регистрируется через Bukkit `ServicesManager`;
+- PlaceholderAPI expansion использует именно этот read-only API;
 - HTTP endpoint в MeltarionCaravans **не входит**;
-- PlaceholderAPI в этой задаче **не добавляется**.
+- PlaceholderAPI не даёт write-доступ к караванам.
 
 ## Как получить API из другого плагина
 
@@ -127,7 +128,7 @@ List<CaravanSummary> caravans = api.getCaravansByOwner(playerUuid);
 ## Что не входит в этот API
 
 - HTTP endpoints
-- PlaceholderAPI
 - write/control API
 - управление маршрутами извне
 - внешнее изменение торговли
+- прямой доступ к инвентарям

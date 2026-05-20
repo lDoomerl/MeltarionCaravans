@@ -16,6 +16,7 @@ import net.meltarion.caravans.listener.CaravanLicenseListener;
 import net.meltarion.caravans.listener.CaravanSetupListener;
 import net.meltarion.caravans.listener.PlayerNotificationListener;
 import net.meltarion.caravans.listener.TradeSetupSessionListener;
+import net.meltarion.caravans.placeholder.MeltarionCaravansPlaceholderExpansion;
 import net.meltarion.caravans.service.CaravanEntityService;
 import net.meltarion.caravans.service.CaravanRouteService;
 import net.meltarion.caravans.service.CaravanMovementService;
@@ -43,6 +44,7 @@ import net.meltarion.caravans.storage.SQLiteCaravanStorage;
 import net.meltarion.caravans.storage.StorageException;
 import net.meltarion.caravans.storage.TradeOperationStorage;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -73,6 +75,7 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
     private CaravanIdentifierResolver caravanIdentifierResolver;
     private MeltarionCaravansApi meltarionCaravansApi;
     private volatile boolean apiReady;
+    private Object placeholderExpansion;
 
     @Override
     public void onEnable() {
@@ -130,6 +133,7 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
             dynmapService.initialize();
         }
         registerApi();
+        registerPlaceholderApiIfAvailable();
         apiReady = true;
         getLogger().info("MeltarionCaravans enabled.");
     }
@@ -137,6 +141,7 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
     @Override
     public void onDisable() {
         apiReady = false;
+        unregisterPlaceholderApiIfRegistered();
         unregisterApi();
         if (inventoryService != null) {
             inventoryService.saveAllOpenInventories();
@@ -199,6 +204,8 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
             dynmapService.shutdown();
             dynmapService.initialize();
         }
+        unregisterPlaceholderApiIfRegistered();
+        registerPlaceholderApiIfAvailable();
     }
 
     public ConfigManager getConfigManager() {
@@ -383,6 +390,39 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
         if (meltarionCaravansApi != null) {
             getServer().getServicesManager().unregister(MeltarionCaravansApi.class, meltarionCaravansApi);
             meltarionCaravansApi = null;
+        }
+    }
+
+    private void registerPlaceholderApiIfAvailable() {
+        if (!configManager.isPlaceholderApiEnabled()) {
+            getLogger().info("PlaceholderAPI support is disabled in config.yml.");
+            return;
+        }
+
+        Plugin placeholderApiPlugin = getServer().getPluginManager().getPlugin("PlaceholderAPI");
+        if (placeholderApiPlugin == null || !placeholderApiPlugin.isEnabled()) {
+            getLogger().info("PlaceholderAPI was not found. MeltarionCaravans placeholders are disabled.");
+            return;
+        }
+
+        MeltarionCaravansPlaceholderExpansion expansion = new MeltarionCaravansPlaceholderExpansion(
+            this,
+            meltarionCaravansApi,
+            configManager
+        );
+        if (expansion.register()) {
+            placeholderExpansion = expansion;
+            getLogger().info("Registered PlaceholderAPI expansion: %meltarioncaravans_*%");
+            return;
+        }
+
+        getLogger().warning("Failed to register MeltarionCaravans PlaceholderAPI expansion.");
+    }
+
+    private void unregisterPlaceholderApiIfRegistered() {
+        if (placeholderExpansion instanceof MeltarionCaravansPlaceholderExpansion expansion) {
+            expansion.unregister();
+            placeholderExpansion = null;
         }
     }
 

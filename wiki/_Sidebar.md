@@ -9,6 +9,7 @@
 - [Торговля](Trading)
 - [Конфигурация](Configuration)
 - [GUI и язык](GUI-and-Lang)
+- [PlaceholderAPI](PlaceholderAPI)
 - [Dynmap](Dynmap)
 - [API](API)
 - [Решение проблем](Troubleshooting)

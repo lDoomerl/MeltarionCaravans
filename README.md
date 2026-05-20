@@ -13,8 +13,10 @@
   Used for own-town spawn restrictions, Shop Plot checks, and route town selection.
 - `Dynmap`
   Used for optional caravan markers.
+- `PlaceholderAPI`
+  Used for optional read-only player placeholders based on the MeltarionCaravans public API.
 
-The plugin starts without Dynmap. Towny is optional overall, but Towny-dependent mechanics such as physical spawn restrictions and route town selection require it.
+The plugin starts without Dynmap or PlaceholderAPI. Towny is optional overall, but Towny-dependent mechanics such as physical spawn restrictions and route town selection require it.
 
 ## Public API
 
@@ -63,6 +65,30 @@ Not included:
 - HTTP endpoints
 - write/control API
 - caravan inventories or item stacks
+
+## PlaceholderAPI
+
+If PlaceholderAPI is installed and `placeholderapi.enabled: true`, MeltarionCaravans registers an internal expansion with the identifier `meltarioncaravans`.
+
+Examples:
+
+- `%meltarioncaravans_count%`
+- `%meltarioncaravans_limit%`
+- `%meltarioncaravans_first_name%`
+- `%meltarioncaravans_1_status%`
+- `%meltarioncaravans_1_eta%`
+
+Configuration:
+
+```yml
+placeholderapi:
+  enabled: true
+  empty-value: ""
+  eta-format: "mm:ss"
+  hp-decimals: 0
+```
+
+If PlaceholderAPI is missing, the plugin still starts normally and only logs an informational message.
 
 ## Installation
 

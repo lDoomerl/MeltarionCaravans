@@ -366,6 +366,22 @@ public final class ConfigManager {
         return config.getBoolean("dynmap.show-eta", true);
     }
 
+    public boolean isPlaceholderApiEnabled() {
+        return config.getBoolean("placeholderapi.enabled", true);
+    }
+
+    public String getPlaceholderApiEmptyValue() {
+        return config.getString("placeholderapi.empty-value", "");
+    }
+
+    public String getPlaceholderApiEtaFormat() {
+        return config.getString("placeholderapi.eta-format", "mm:ss");
+    }
+
+    public int getPlaceholderApiHpDecimals() {
+        return Math.max(0, config.getInt("placeholderapi.hp-decimals", 0));
+    }
+
     public String getLegacyMessage(String path) {
         return config.getString("messages." + path, "");
     }
