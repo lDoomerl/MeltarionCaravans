@@ -31,13 +31,10 @@ public final class InfoSubcommand implements CaravanSubcommand {
         }
 
         Player player = (Player) context.sender();
-        CaravanLookupResult result = context.caravans().findCaravanForOwner(player.getUniqueId(), context.args()[1]);
+        String reference = joinArgs(context.args(), 1);
+        var result = context.identifiers().resolveForPlayer(player, reference);
         if (!result.success()) {
-            if (result.failureReason() == CaravanLookupResult.FailureReason.AMBIGUOUS) {
-                context.messages().send(context.sender(), "ambiguous-id");
-            } else {
-                context.messages().send(context.sender(), "caravan-not-found");
-            }
+            context.identifiers().sendFailure(context.sender(), result);
             return;
         }
 
@@ -49,5 +46,9 @@ public final class InfoSubcommand implements CaravanSubcommand {
             "hp", String.valueOf(result.caravan().hp()),
             "max_hp", String.valueOf(result.caravan().maxHp())
         ));
+    }
+
+    private String joinArgs(String[] args, int startIndex) {
+        return String.join(" ", java.util.Arrays.copyOfRange(args, startIndex, args.length));
     }
 }

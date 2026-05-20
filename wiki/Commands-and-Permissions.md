@@ -7,13 +7,13 @@
 | `/caravan help` | Показать справку |
 | `/caravan create [name]` | Создать караван |
 | `/caravan list` | Показать свои караваны |
-| `/caravan info <id>` | Показать информацию о своём караване |
-| `/caravan rename <id> <new name>` | Переименовать свой караван |
-| `/caravan delete <id>` | Удалить свой караван |
-| `/caravan spawn <id>` | Призвать физический караван |
-| `/caravan move <id> <x> <z>` | Отправить караван в точку |
-| `/caravan stop <id>` | Остановить караван |
-| `/caravan return <id>` | Отправить караван домой |
+| `/caravan info <identifier>` | Показать информацию о своём караване |
+| `/caravan rename <identifier> <new name>` | Переименовать свой караван |
+| `/caravan delete <identifier>` | Удалить свой караван |
+| `/caravan spawn <identifier>` | Призвать физический караван |
+| `/caravan move <identifier> <x> <z>` | Отправить караван в точку |
+| `/caravan stop <identifier>` | Остановить караван |
+| `/caravan return <identifier>` | Отправить караван домой |
 | `/caravan reload` | Перезагрузить конфиги |
 
 ## Админ-команды
@@ -21,23 +21,56 @@
 | Команда | Описание |
 |---|---|
 | `/caravan admin list <player>` | Показать караваны игрока |
-| `/caravan admin info <id>` | Показать любой караван |
-| `/caravan admin open <id>` | Открыть инвентарь каравана |
-| `/caravan admin setup <id>` | Открыть GUI настройки владельца |
-| `/caravan admin trades <id>` | Открыть GUI управления торговлей |
-| `/caravan admin sell <id> <slot> <price>` | Создать SELL-операцию |
-| `/caravan admin buy <id> <material> <amount> <price> <max>` | Создать BUY-операцию |
-| `/caravan admin spawn <id> [player]` | Призвать физический караван |
-| `/caravan admin despawn <id>` | Убрать физическую проекцию |
-| `/caravan admin move <id> <world> <x> <z>` | Задать перемещение |
-| `/caravan admin position <id>` | Показать виртуальную позицию |
-| `/caravan admin debug <id>` | Показать расширенную диагностику |
-| `/caravan admin routeinfo <id>` | Показать остановки маршрута |
-| `/caravan admin routeclear <id>` | Очистить маршрут |
-| `/caravan admin return <id>` | Отправить караван домой |
-| `/caravan admin delete <id>` | Удалить любой караван |
+| `/caravan admin info <identifier>` | Показать любой караван |
+| `/caravan admin open <identifier>` | Открыть инвентарь каравана |
+| `/caravan admin setup <identifier>` | Открыть GUI настройки владельца |
+| `/caravan admin trades <identifier>` | Открыть GUI управления торговлей |
+| `/caravan admin sell <identifier> <slot> <price>` | Создать SELL-операцию |
+| `/caravan admin buy <identifier> <material> <amount> <price> <max>` | Создать BUY-операцию |
+| `/caravan admin spawn <identifier> [player]` | Призвать физический караван |
+| `/caravan admin despawn <identifier>` | Убрать физическую проекцию |
+| `/caravan admin move <identifier> <world> <x> <z>` | Задать перемещение |
+| `/caravan admin position <identifier>` | Показать виртуальную позицию |
+| `/caravan admin debug <identifier>` | Показать расширенную диагностику |
+| `/caravan admin routeinfo <identifier>` | Показать остановки маршрута |
+| `/caravan admin routeclear <identifier>` | Очистить маршрут |
+| `/caravan admin return <identifier>` | Отправить караван домой |
+| `/caravan admin delete <identifier>` | Удалить любой караван |
 | `/caravan admin reload` | Перезагрузить конфиги |
 | `/caravan admin givelicense <player> [amount]` | Выдать лицензию |
+
+## Что такое идентификатор каравана
+
+Под `<identifier>` плагин понимает один из следующих вариантов:
+
+- номер каравана из `/caravan list`;
+- имя каравана;
+- short ID;
+- полный UUID.
+
+Для админ-команд дополнительно поддерживаются:
+
+- `owner:index`
+- `owner:name`
+
+Примеры:
+
+```text
+/caravan info 1
+/caravan spawn 2
+/caravan rename 1 Северный караван
+/caravan admin debug Anton:1
+/caravan admin info Anton:Северный караван
+```
+
+Приоритет для обычных команд игрока:
+
+1. Полный UUID
+2. Short UUID
+3. Номер из списка игрока
+4. Точное имя каравана без учёта регистра
+
+Если имя оказалось неоднозначным, используйте номер из `/caravan list` или short ID.
 
 ## Permissions
 
@@ -63,10 +96,29 @@
 /caravan create Северный Караван
 ```
 
-### Посмотреть короткие ID
+### Посмотреть номера и short ID
 
 ```text
 /caravan list
+```
+
+### Открыть караван по номеру из списка
+
+```text
+/caravan info 1
+/caravan spawn 2
+```
+
+### Открыть караван по owner:index
+
+```text
+/caravan admin debug Anton:1
+```
+
+### Открыть караван по owner:name
+
+```text
+/caravan admin info Anton:Северный караван
 ```
 
 ### Запустить маршрут домой

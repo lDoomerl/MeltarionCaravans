@@ -21,14 +21,14 @@
 
 ## 4. Physical Spawn
 
-- `/caravan spawn <id>` работает в своём городе.
+- `/caravan spawn 1` или `/caravan spawn <identifier>` работает в своём городе.
 - Вне своего города команда отклоняется.
 - Проекция появляется как trader + 2 llama.
 
 ## 5. Setup GUI
 
 - Правый клик владельца открывает setup GUI.
-- `/caravan admin setup <id>` работает.
+- `/caravan admin setup <identifier>` работает.
 - Кнопки GUI открывают нужные разделы.
 
 ## 6. Trading
@@ -40,9 +40,9 @@
 
 ## 7. Movement
 
-- `/caravan move <id> <x> <z>` запускает движение.
-- `/caravan stop <id>` останавливает движение.
-- `/caravan return <id>` отправляет домой.
+- `/caravan move <identifier> <x> <z>` запускает движение.
+- `/caravan stop <identifier>` останавливает движение.
+- `/caravan return <identifier>` отправляет домой.
 - ETA меняется логично.
 
 ## 8. Routes

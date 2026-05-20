@@ -4,7 +4,6 @@ import java.util.Map;
 import net.meltarion.caravans.command.CaravanSubcommand;
 import net.meltarion.caravans.command.CommandContext;
 import net.meltarion.caravans.model.CaravanRecord;
-import net.meltarion.caravans.service.CaravanLookupResult;
 import net.meltarion.caravans.service.PhysicalSpawnFailureReason;
 import net.meltarion.caravans.service.PhysicalSpawnResult;
 import net.meltarion.caravans.service.TownyRequirementResult;
@@ -39,13 +38,11 @@ public final class SpawnSubcommand implements CaravanSubcommand {
             return;
         }
 
-        CaravanLookupResult lookupResult = context.caravans().findCaravan(context.args()[1]);
+        var lookupResult = player.hasPermission("meltarion.caravans.admin")
+            ? context.identifiers().resolveForAdmin(context.args()[1])
+            : context.identifiers().resolveForPlayer(player, joinArgs(context.args(), 1));
         if (!lookupResult.success()) {
-            if (lookupResult.failureReason() == CaravanLookupResult.FailureReason.AMBIGUOUS) {
-                context.messages().send(player, "ambiguous-id");
-            } else {
-                context.messages().send(player, "caravan-not-found");
-            }
+            context.identifiers().sendFailure(player, lookupResult);
             return;
         }
 
@@ -112,5 +109,9 @@ public final class SpawnSubcommand implements CaravanSubcommand {
             "hp", String.valueOf(caravan.hp()),
             "max_hp", String.valueOf(caravan.maxHp())
         );
+    }
+
+    private String joinArgs(String[] args, int startIndex) {
+        return String.join(" ", java.util.Arrays.copyOfRange(args, startIndex, args.length));
     }
 }

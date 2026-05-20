@@ -33,7 +33,22 @@
 Игрок:
 
 ```text
-/caravan spawn <id>
+/caravan spawn <identifier>
+```
+
+Самые удобные варианты идентификатора для игрока:
+
+- номер из `/caravan list`;
+- имя каравана;
+- short ID;
+- полный UUID.
+
+Примеры:
+
+```text
+/caravan spawn 1
+/caravan info Северный караван
+/caravan delete 2
 ```
 
 Условия:
@@ -51,7 +66,7 @@
 - или через админ-команду:
 
 ```text
-/caravan admin setup <id>
+/caravan admin setup <identifier>
 ```
 
 В setup GUI доступны:
@@ -70,7 +85,7 @@
 Для отладки и администрирования склад можно открыть так:
 
 ```text
-/caravan admin open <id>
+/caravan admin open <identifier>
 ```
 
 Предметы, лежащие в инвентаре каравана, используются:
@@ -90,7 +105,7 @@
 2. Через debug-команду:
 
 ```text
-/caravan admin sell <id> <slot> <price>
+/caravan admin sell <identifier> <slot> <price>
 ```
 
 SELL-операция:
@@ -114,8 +129,17 @@ SELL-операция:
 Или через debug-команду:
 
 ```text
-/caravan admin buy <id> <material> <amount> <price> <max-total>
+/caravan admin buy <identifier> <material> <amount> <price> <max-total>
 ```
+
+Для админов `<identifier>` может быть таким:
+
+- полный UUID;
+- short ID;
+- `owner:index`, например `Anton:1`;
+- `owner:name`, например `Anton:Северный караван`.
+
+Если имя неоднозначно, используйте номер из `/caravan list` или short ID.
 
 ## Как работает публичная торговля
 

@@ -5,7 +5,6 @@ import java.util.Map;
 import net.meltarion.caravans.command.CaravanSubcommand;
 import net.meltarion.caravans.command.CommandContext;
 import net.meltarion.caravans.model.CaravanRecord;
-import net.meltarion.caravans.service.CaravanLookupResult;
 import net.meltarion.caravans.service.CaravanMovementResult;
 import org.bukkit.entity.Player;
 
@@ -37,7 +36,7 @@ public final class ReturnSubcommand implements CaravanSubcommand {
             return;
         }
 
-        CaravanRecord caravan = resolveCaravan(context, player, context.args()[1]);
+        CaravanRecord caravan = resolveCaravan(context, player);
         if (caravan == null) {
             return;
         }
@@ -46,12 +45,12 @@ public final class ReturnSubcommand implements CaravanSubcommand {
         sendMovementResult(context, player, result, "movement-started");
     }
 
-    private CaravanRecord resolveCaravan(CommandContext context, Player player, String reference) {
-        CaravanLookupResult result = player.hasPermission("meltarion.caravans.admin")
-            ? context.caravans().findCaravan(reference)
-            : context.caravans().findCaravanForOwner(player.getUniqueId(), reference);
+    private CaravanRecord resolveCaravan(CommandContext context, Player player) {
+        var result = player.hasPermission("meltarion.caravans.admin")
+            ? context.identifiers().resolveForAdmin(joinArgs(context.args(), 1))
+            : context.identifiers().resolveForPlayer(player, joinArgs(context.args(), 1));
         if (!result.success()) {
-            context.messages().send(player, result.failureReason() == CaravanLookupResult.FailureReason.AMBIGUOUS ? "ambiguous-id" : "caravan-not-found");
+            context.identifiers().sendFailure(player, result);
             return null;
         }
         return result.caravan();
@@ -86,5 +85,9 @@ public final class ReturnSubcommand implements CaravanSubcommand {
             Map.entry("eta", caravan.etaSeconds() == null ? "?" : String.valueOf(caravan.etaSeconds())),
             Map.entry("status", caravan.status().name())
         );
+    }
+
+    private String joinArgs(String[] args, int startIndex) {
+        return String.join(" ", java.util.Arrays.copyOfRange(args, startIndex, args.length));
     }
 }

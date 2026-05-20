@@ -53,7 +53,7 @@
 7. Призовите его в городе Towny:
 
 ```text
-/caravan spawn <id>
+/caravan spawn 1
 ```
 
 ## Основные разделы

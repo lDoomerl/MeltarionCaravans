@@ -64,6 +64,12 @@ git commit -m "Fix gradlew executable bit"
 - есть ли у каравана позиция/дом;
 - нет ли ошибок storage в `latest.log`.
 
+Если вы указываете караван по имени и команда не срабатывает, попробуйте:
+
+- сначала выполнить `/caravan list`;
+- затем использовать номер из списка;
+- либо использовать short ID.
+
 ### Public trading unavailable
 
 Проверьте:
@@ -72,6 +78,14 @@ git commit -m "Fix gradlew executable bit"
 - находится ли он в `STOPPED`;
 - есть ли активные SELL или BUY операции;
 - не находится ли он в `ATTACKED`.
+
+### Неоднозначное имя каравана
+
+Если у команды появляется ошибка про неоднозначное имя:
+
+- выполните `/caravan list`;
+- возьмите номер слева, например `1` или `2`;
+- либо используйте short ID в квадратных скобках.
 
 ### Dynmap marker missing
 
@@ -106,7 +120,7 @@ git commit -m "Fix gradlew executable bit"
 ### Глубокая диагностика
 
 ```text
-/caravan admin debug <id>
+/caravan admin debug <identifier>
 ```
 
 Показывает:
@@ -124,11 +138,11 @@ git commit -m "Fix gradlew executable bit"
 ### Позиция
 
 ```text
-/caravan admin position <id>
+/caravan admin position <identifier>
 ```
 
 ### Маршрут
 
 ```text
-/caravan admin routeinfo <id>
+/caravan admin routeinfo <identifier>
 ```

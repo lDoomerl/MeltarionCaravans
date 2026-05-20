@@ -23,5 +23,6 @@ public final class HelpSubcommand implements CaravanSubcommand {
     @Override
     public void execute(CommandContext context) {
         context.messages().sendList(context.sender(), "help");
+        context.messages().send(context.sender(), "caravan-identifier-help");
     }
 }

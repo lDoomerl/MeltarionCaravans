@@ -5,7 +5,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import net.meltarion.caravans.command.CaravanSubcommand;
 import net.meltarion.caravans.command.CommandContext;
-import net.meltarion.caravans.service.CaravanLookupResult;
 import net.meltarion.caravans.service.CaravanMutationResult;
 import org.bukkit.entity.Player;
 
@@ -34,13 +33,9 @@ public final class RenameSubcommand implements CaravanSubcommand {
         }
 
         Player player = (Player) context.sender();
-        CaravanLookupResult lookupResult = context.caravans().findCaravanForOwner(player.getUniqueId(), context.args()[1]);
+        var lookupResult = context.identifiers().resolveForPlayer(player, context.args()[1]);
         if (!lookupResult.success()) {
-            if (lookupResult.failureReason() == CaravanLookupResult.FailureReason.AMBIGUOUS) {
-                context.messages().send(context.sender(), "ambiguous-id");
-            } else {
-                context.messages().send(context.sender(), "caravan-not-found");
-            }
+            context.identifiers().sendFailure(context.sender(), lookupResult);
             return;
         }
 

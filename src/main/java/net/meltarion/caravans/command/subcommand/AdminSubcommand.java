@@ -7,7 +7,6 @@ import net.meltarion.caravans.command.CommandContext;
 import net.meltarion.caravans.model.CaravanRecord;
 import net.meltarion.caravans.model.CaravanRouteStopRecord;
 import net.meltarion.caravans.model.TradeOperationType;
-import net.meltarion.caravans.service.CaravanLookupResult;
 import net.meltarion.caravans.service.CaravanMovementResult;
 import net.meltarion.caravans.service.CaravanMutationResult;
 import net.meltarion.caravans.service.PhysicalSpawnFailureReason;
@@ -39,6 +38,7 @@ public final class AdminSubcommand implements CaravanSubcommand {
     public void execute(CommandContext context) {
         if (context.args().length < 2) {
             context.messages().sendList(context.sender(), "admin-help");
+            context.messages().send(context.sender(), "caravan-identifier-help");
             return;
         }
 
@@ -62,7 +62,10 @@ public final class AdminSubcommand implements CaravanSubcommand {
             case "delete" -> handleDelete(context);
             case "reload" -> handleReload(context);
             case "givelicense" -> handleGiveLicense(context);
-            default -> context.messages().sendList(context.sender(), "admin-help");
+            default -> {
+                context.messages().sendList(context.sender(), "admin-help");
+                context.messages().send(context.sender(), "caravan-identifier-help");
+            }
         }
     }
 
@@ -90,8 +93,10 @@ public final class AdminSubcommand implements CaravanSubcommand {
         }
 
         context.messages().send(context.sender(), "admin-list-header", Map.of("player", playerName));
-        for (CaravanRecord caravan : caravans) {
+        for (int index = 0; index < caravans.size(); index++) {
+            CaravanRecord caravan = caravans.get(index);
             context.messages().send(context.sender(), "admin-list-entry", Map.of(
+                "index", String.valueOf(index + 1),
                 "id", context.caravans().getShortId(caravan),
                 "name", caravan.name(),
                 "player", caravan.ownerName(),
@@ -108,13 +113,9 @@ public final class AdminSubcommand implements CaravanSubcommand {
             return;
         }
 
-        CaravanLookupResult result = context.caravans().findCaravan(context.args()[2]);
+        var result = context.identifiers().resolveForAdmin(joinArgs(context.args(), 2));
         if (!result.success()) {
-            if (result.failureReason() == CaravanLookupResult.FailureReason.AMBIGUOUS) {
-                context.messages().send(context.sender(), "ambiguous-id");
-            } else {
-                context.messages().send(context.sender(), "caravan-not-found");
-            }
+            context.identifiers().sendFailure(context.sender(), result);
             return;
         }
 
@@ -134,13 +135,9 @@ public final class AdminSubcommand implements CaravanSubcommand {
             return;
         }
 
-        CaravanLookupResult lookupResult = context.caravans().findCaravan(context.args()[2]);
+        var lookupResult = context.identifiers().resolveForAdmin(joinArgs(context.args(), 2));
         if (!lookupResult.success()) {
-            if (lookupResult.failureReason() == CaravanLookupResult.FailureReason.AMBIGUOUS) {
-                context.messages().send(context.sender(), "ambiguous-id");
-            } else {
-                context.messages().send(context.sender(), "caravan-not-found");
-            }
+            context.identifiers().sendFailure(context.sender(), lookupResult);
             return;
         }
 
@@ -514,13 +511,9 @@ public final class AdminSubcommand implements CaravanSubcommand {
             return;
         }
 
-        CaravanLookupResult result = context.caravans().findCaravan(context.args()[2]);
+        var result = context.identifiers().resolveForAdmin(joinArgs(context.args(), 2));
         if (!result.success()) {
-            if (result.failureReason() == CaravanLookupResult.FailureReason.AMBIGUOUS) {
-                context.messages().send(context.sender(), "ambiguous-id");
-            } else {
-                context.messages().send(context.sender(), "caravan-not-found");
-            }
+            context.identifiers().sendFailure(context.sender(), result);
             return;
         }
 
@@ -579,16 +572,16 @@ public final class AdminSubcommand implements CaravanSubcommand {
     }
 
     private CaravanRecord resolveAdminCaravan(CommandContext context, String reference) {
-        CaravanLookupResult result = context.caravans().findCaravan(reference);
+        var result = context.identifiers().resolveForAdmin(reference);
         if (!result.success()) {
-            if (result.failureReason() == CaravanLookupResult.FailureReason.AMBIGUOUS) {
-                context.messages().send(context.sender(), "ambiguous-id");
-            } else {
-                context.messages().send(context.sender(), "caravan-not-found");
-            }
+            context.identifiers().sendFailure(context.sender(), result);
             return null;
         }
         return result.caravan();
+    }
+
+    private String joinArgs(String[] args, int startIndex) {
+        return String.join(" ", java.util.Arrays.copyOfRange(args, startIndex, args.length));
     }
 
     private void handleTradeCreateResult(CommandContext context, TradeOperationCreateResult result, CaravanRecord caravan) {

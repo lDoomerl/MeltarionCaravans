@@ -21,6 +21,7 @@ import net.meltarion.caravans.service.CaravanSetupGuiService;
 import net.meltarion.caravans.service.CaravanInventoryService;
 import net.meltarion.caravans.service.CaravanService;
 import net.meltarion.caravans.service.CaravanHealthService;
+import net.meltarion.caravans.service.CaravanIdentifierResolver;
 import net.meltarion.caravans.service.CaravanLicenseService;
 import net.meltarion.caravans.service.DynmapService;
 import net.meltarion.caravans.service.MessageService;
@@ -66,6 +67,7 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
     private ResourceUpdateService resourceUpdateService;
     private CaravanStorage caravanStorage;
     private CaravanService caravanService;
+    private CaravanIdentifierResolver caravanIdentifierResolver;
 
     @Override
     public void onEnable() {
@@ -206,6 +208,10 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
         return caravanService;
     }
 
+    public CaravanIdentifierResolver getCaravanIdentifierResolver() {
+        return caravanIdentifierResolver;
+    }
+
     public CaravanLicenseService getLicenseService() {
         return licenseService;
     }
@@ -286,6 +292,7 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
         );
         persistentCaravanService.loadCaravans();
         this.caravanService = persistentCaravanService;
+        this.caravanIdentifierResolver = new CaravanIdentifierResolver(caravanService, messageService);
         this.townyIntegrationService = new TownyIntegrationService(getServer().getPluginManager(), configManager, getLogger());
         this.caravanEntityService = new CaravanEntityService(this, configManager, getLogger());
         this.caravanHealthService = new CaravanHealthService(this, configManager, caravanService, caravanEntityService, getLogger());

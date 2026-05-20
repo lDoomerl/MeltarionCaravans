@@ -81,8 +81,8 @@
 Команды возврата:
 
 ```text
-/caravan return <id>
-/caravan admin return <id>
+/caravan return <identifier>
+/caravan admin return <identifier>
 ```
 
 После завершения обычного маршрута без loop mode караван также возвращается домой автоматически.

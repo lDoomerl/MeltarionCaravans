@@ -6,7 +6,6 @@ import net.meltarion.caravans.command.CaravanSubcommand;
 import net.meltarion.caravans.command.CommandContext;
 import net.meltarion.caravans.model.CaravanRecord;
 import net.meltarion.caravans.model.CaravanStatus;
-import net.meltarion.caravans.service.CaravanLookupResult;
 import net.meltarion.caravans.service.CaravanMovementResult;
 import org.bukkit.entity.Player;
 
@@ -58,11 +57,11 @@ public final class MoveSubcommand implements CaravanSubcommand {
     }
 
     private CaravanRecord resolveCaravan(CommandContext context, Player player, String reference) {
-        CaravanLookupResult result = player.hasPermission("meltarion.caravans.admin")
-            ? context.caravans().findCaravan(reference)
-            : context.caravans().findCaravanForOwner(player.getUniqueId(), reference);
+        var result = player.hasPermission("meltarion.caravans.admin")
+            ? context.identifiers().resolveForAdmin(reference)
+            : context.identifiers().resolveForPlayer(player, reference);
         if (!result.success()) {
-            context.messages().send(player, result.failureReason() == CaravanLookupResult.FailureReason.AMBIGUOUS ? "ambiguous-id" : "caravan-not-found");
+            context.identifiers().sendFailure(player, result);
             return null;
         }
         if (!player.hasPermission("meltarion.caravans.admin") && !result.caravan().ownerId().equals(player.getUniqueId())) {

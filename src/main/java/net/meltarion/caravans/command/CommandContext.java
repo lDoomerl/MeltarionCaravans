@@ -4,6 +4,7 @@ import net.meltarion.caravans.MeltarionCaravansPlugin;
 import net.meltarion.caravans.config.ConfigManager;
 import net.meltarion.caravans.service.CaravanInventoryService;
 import net.meltarion.caravans.service.CaravanEntityService;
+import net.meltarion.caravans.service.CaravanIdentifierResolver;
 import net.meltarion.caravans.service.CaravanMovementService;
 import net.meltarion.caravans.service.CaravanSetupGuiService;
 import net.meltarion.caravans.service.CaravanService;
@@ -26,6 +27,10 @@ public record CommandContext(
 
     public CaravanService caravans() {
         return plugin.getCaravanService();
+    }
+
+    public CaravanIdentifierResolver identifiers() {
+        return plugin.getCaravanIdentifierResolver();
     }
 
     public CaravanLicenseService licenses() {

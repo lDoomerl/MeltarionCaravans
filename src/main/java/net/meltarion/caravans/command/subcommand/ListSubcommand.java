@@ -34,8 +34,10 @@ public final class ListSubcommand implements CaravanSubcommand {
         }
 
         context.messages().send(context.sender(), "list-header");
-        for (CaravanRecord caravan : caravans) {
+        for (int index = 0; index < caravans.size(); index++) {
+            CaravanRecord caravan = caravans.get(index);
             context.messages().send(context.sender(), "list-entry", Map.of(
+                "index", String.valueOf(index + 1),
                 "id", context.caravans().getShortId(caravan),
                 "name", caravan.name(),
                 "status", caravan.status().name(),
