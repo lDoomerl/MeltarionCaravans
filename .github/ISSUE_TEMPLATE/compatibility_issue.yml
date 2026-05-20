@@ -1,0 +1,43 @@
+name: Compatibility Issue
+description: Report incompatibility with Paper, Towny, Dynmap, or other plugins
+title: "[Compatibility]: "
+labels:
+  - compatibility
+body:
+  - type: input
+    id: plugin_version
+    attributes:
+      label: MeltarionCaravans version
+      placeholder: e.g. v0.1.0
+    validations:
+      required: true
+  - type: input
+    id: minecraft_version
+    attributes:
+      label: Minecraft / server version
+      placeholder: e.g. Paper 1.21.4
+    validations:
+      required: true
+  - type: input
+    id: other_plugin
+    attributes:
+      label: Related plugin or dependency
+      placeholder: e.g. Towny 0.101.x, Dynmap 3.x
+    validations:
+      required: true
+  - type: textarea
+    id: issue
+    attributes:
+      label: Compatibility problem
+      description: Explain what breaks or behaves incorrectly.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs or errors
+      render: text
+  - type: textarea
+    id: workaround
+    attributes:
+      label: Known workaround
