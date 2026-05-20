@@ -58,9 +58,9 @@
 ```text
 /caravan info 1
 /caravan spawn 2
-/caravan rename 1 Северный караван
+/caravan rename 1 Severnyy_karavan
 /caravan admin debug Anton:1
-/caravan admin info Anton:Северный караван
+/caravan admin info Anton:Severnyy_karavan
 ```
 
 Приоритет для обычных команд игрока:
@@ -93,7 +93,7 @@
 ### Создать караван с именем
 
 ```text
-/caravan create Северный Караван
+/caravan create Severnyy_Karavan
 ```
 
 ### Посмотреть номера и short ID
@@ -118,7 +118,7 @@
 ### Открыть караван по owner:name
 
 ```text
-/caravan admin info Anton:Северный караван
+/caravan admin info Anton:Severnyy_karavan
 ```
 
 ### Запустить маршрут домой

@@ -20,7 +20,7 @@ import org.bukkit.entity.Player;
 
 public final class PersistentCaravanService implements CaravanService {
 
-    private static final Pattern VALID_NAME_PATTERN = Pattern.compile("[A-Za-z0-9 _-]+");
+    private static final Pattern VALID_NAME_PATTERN = Pattern.compile("[A-Za-z0-9_-]+");
     private static final Pattern COLOR_CODE_PATTERN = Pattern.compile("(?i)(?:&|\u00A7)[0-9A-FK-OR]");
 
     private final ConfigManager configManager;
@@ -356,7 +356,7 @@ public final class PersistentCaravanService implements CaravanService {
     private String generateDefaultName(List<CaravanRecord> ownerCaravans) {
         int number = 1;
         while (true) {
-            String candidate = "Caravan " + number;
+            String candidate = "Caravan-" + number;
             boolean exists = ownerCaravans.stream()
                 .anyMatch(caravan -> caravan.name().equalsIgnoreCase(candidate));
             if (!exists) {
