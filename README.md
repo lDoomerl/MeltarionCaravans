@@ -16,6 +16,54 @@
 
 The plugin starts without Dynmap. Towny is optional overall, but Towny-dependent mechanics such as physical spawn restrictions and route town selection require it.
 
+## Public API
+
+The plugin now exposes a read-only Bukkit `ServicesManager` API for external plugins.
+
+Service interface:
+
+```java
+net.meltarion.caravans.api.MeltarionCaravansApi
+```
+
+Lookup example:
+
+```java
+RegisteredServiceProvider<MeltarionCaravansApi> provider =
+    Bukkit.getServicesManager().getRegistration(MeltarionCaravansApi.class);
+
+if (provider != null) {
+    MeltarionCaravansApi api = provider.getProvider();
+    if (api.isCaravanPluginReady()) {
+        List<CaravanSummary> caravans = api.getCaravansByOwner(playerUuid);
+    }
+}
+```
+
+Available methods:
+
+- `getCaravansByOwner(UUID ownerUuid)`
+- `getCaravan(UUID caravanId)`
+- `getCaravanCount(UUID ownerUuid)`
+- `getCaravanLimit(UUID ownerUuid)`
+- `isCaravanPluginReady()`
+
+`CaravanSummary` is a safe immutable DTO with read-only metadata only:
+
+- IDs and owner info
+- status and HP
+- virtual position and target
+- ETA and route flags
+- active SELL/BUY offer counts
+- update timestamp
+
+Not included:
+
+- PlaceholderAPI hooks
+- HTTP endpoints
+- write/control API
+- caravan inventories or item stacks
+
 ## Installation
 
 1. Download the latest release jar from the repository Releases page.
@@ -118,6 +166,7 @@ The distributable plugin jar is generated in `build/libs/`.
 ## Development Notes
 
 - Main plugin class: `net.meltarion.caravans.MeltarionCaravansPlugin`
+- Public API: `net.meltarion.caravans.api.MeltarionCaravansApi`
 - API target: Paper `1.21`
 - Java toolchain: `21`
 

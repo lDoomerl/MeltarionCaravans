@@ -2,62 +2,132 @@
 
 ## Текущее состояние API
 
-На данный момент стабильный внешний API для других плагинов **ещё не оформлен как публичный контракт**.
+Начиная с текущей версии плагин предоставляет **read-only Bukkit API** через `ServicesManager`.
 
-Внутри плагина уже есть сервисный слой, например:
+Публичный интерфейс:
 
-- `CaravanService`
-- `CaravanMovementService`
-- `CaravanRouteService`
-- `TradeOperationService`
-- `PublicTradeService`
-- `CaravanInventoryService`
+```java
+net.meltarion.caravans.api.MeltarionCaravansApi
+```
 
-Но эти сервисы пока стоит считать **внутренней реализацией**, а не обещанным внешним API для сторонних разработчиков.
+Важно:
 
-## Что реально есть сейчас
+- API только для чтения;
+- API регистрируется через Bukkit `ServicesManager`;
+- HTTP endpoint в MeltarionCaravans **не входит**;
+- PlaceholderAPI в этой задаче **не добавляется**.
 
-С точки зрения кода уже существует внутренняя модель данных:
+## Как получить API из другого плагина
 
-- караваны;
-- инвентари;
-- торговые операции;
-- маршруты;
-- виртуальное движение;
-- физическая проекция;
-- Dynmap integration service;
-- resource update service.
+Пример:
 
-Это хорошая база для будущего API, но сам API-слой ещё не закреплён как отдельный модуль/контракт.
+```java
+RegisteredServiceProvider<MeltarionCaravansApi> provider =
+    Bukkit.getServicesManager().getRegistration(MeltarionCaravansApi.class);
 
-## Planned API
+if (provider == null) {
+    return;
+}
 
-Планируется:
+MeltarionCaravansApi api = provider.getProvider();
+if (!api.isCaravanPluginReady()) {
+    return;
+}
 
-- безопасный read-only доступ к караванам игрока;
-- получение краткой информации о маршруте и состоянии;
-- получение публичной сводки для внешних панелей;
-- интеграция с внешними кабинетами и веб-инструментами.
+List<CaravanSummary> caravans = api.getCaravansByOwner(playerUuid);
+```
 
-## Будущая интеграция с DoomerAPI
+## Методы MeltarionCaravansApi
 
-### Планируется
+### `List<CaravanSummary> getCaravansByOwner(UUID ownerUuid)`
 
-- получение списка караванов игрока;
-- отображение караванов в личном кабинете;
-- read-only summary data по:
-  - имени;
-  - статусу;
+Возвращает все караваны игрока в безопасном read-only виде.
+
+### `Optional<CaravanSummary> getCaravan(UUID caravanId)`
+
+Возвращает один караван по полному UUID.
+
+### `int getCaravanCount(UUID ownerUuid)`
+
+Возвращает количество караванов игрока.
+
+### `int getCaravanLimit(UUID ownerUuid)`
+
+Возвращает лимит караванов для игрока.
+
+Примечание:
+
+- если владелец онлайн, используется его актуальный permission-based лимит;
+- если владелец офлайн, API возвращает безопасный fallback из `default-caravan-limit`.
+
+### `boolean isCaravanPluginReady()`
+
+Показывает, что плагин полностью инициализирован и сервис готов к использованию.
+
+## Что содержит CaravanSummary
+
+`CaravanSummary` — immutable DTO, безопасный для сериализации в JSON и для передачи во внешний API.
+
+Поля:
+
+- `id`
+- `shortId`
+- `ownerUuid`
+- `ownerName`
+- `name`
+- `status`
+- `hp`
+- `maxHp`
+- `worldName`
+- `virtualX`
+- `virtualY`
+- `virtualZ`
+- `targetWorldName`
+- `targetX`
+- `targetY`
+- `targetZ`
+- `etaSeconds`
+- `routeRunning`
+- `currentRouteStopIndex`
+- `totalRouteStops`
+- `routeLoopEnabled`
+- `physicalSpawned`
+- `activeSellOffers`
+- `activeBuyOrders`
+- `updatedAt`
+
+В DTO **не попадают**:
+
+- `Inventory`
+- `ItemStack`
+- содержимое склада каравана
+- write-методы управления караваном
+
+## Путь интеграции с DoomerAPI
+
+Текущий API специально сделан как база для будущей интеграции с DoomerAPI:
+
+- получить список караванов игрока;
+- отдать их в личный кабинет;
+- показать read-only summary:
+  - имя;
+  - статус;
   - HP;
-  - позиции;
-  - маршруту;
-  - количеству активных торговых операций.
+  - позицию;
+  - маршрут;
+  - ETA;
+  - количество активных SELL/BUY-операций.
 
-### Пока не заявлено как готовое
+Планируется дальше:
 
-Следующие вещи пока **не считаются реализованным API**:
+- адаптер MeltarionCaravans → DoomerAPI;
+- read-only summary endpoint уже на стороне DoomerAPI;
+- отдельный слой совместимости версий.
 
-- прямое управление караваном из другого плагина;
-- write-операции маршрутов через внешний контракт;
-- внешнее управление торговлей;
-- гарантированная бинарная совместимость между версиями.
+## Что не входит в этот API
+
+- HTTP endpoints
+- PlaceholderAPI
+- write/control API
+- управление маршрутами извне
+- внешнее изменение торговли

@@ -2,6 +2,8 @@ package net.meltarion.caravans;
 
 import java.nio.file.Path;
 import java.util.logging.Level;
+import net.meltarion.caravans.api.MeltarionCaravansApi;
+import net.meltarion.caravans.api.MeltarionCaravansApiImpl;
 import net.meltarion.caravans.command.CaravanCommand;
 import net.meltarion.caravans.config.ConfigManager;
 import net.meltarion.caravans.config.GuiConfigManager;
@@ -41,6 +43,7 @@ import net.meltarion.caravans.storage.SQLiteCaravanStorage;
 import net.meltarion.caravans.storage.StorageException;
 import net.meltarion.caravans.storage.TradeOperationStorage;
 import org.bukkit.command.PluginCommand;
+import org.bukkit.plugin.ServicePriority;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public final class MeltarionCaravansPlugin extends JavaPlugin {
@@ -68,6 +71,8 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
     private CaravanStorage caravanStorage;
     private CaravanService caravanService;
     private CaravanIdentifierResolver caravanIdentifierResolver;
+    private MeltarionCaravansApi meltarionCaravansApi;
+    private volatile boolean apiReady;
 
     @Override
     public void onEnable() {
@@ -124,11 +129,15 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
         if (dynmapService != null) {
             dynmapService.initialize();
         }
+        registerApi();
+        apiReady = true;
         getLogger().info("MeltarionCaravans enabled.");
     }
 
     @Override
     public void onDisable() {
+        apiReady = false;
+        unregisterApi();
         if (inventoryService != null) {
             inventoryService.saveAllOpenInventories();
         }
@@ -272,6 +281,10 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
         return dynmapService;
     }
 
+    public boolean isApiReady() {
+        return apiReady;
+    }
+
     private void initializeStorage() throws StorageException {
         Path databasePath = getDataFolder().toPath().resolve("caravans.db");
         SQLiteCaravanStorage storage = new SQLiteCaravanStorage(databasePath, getLogger());
@@ -352,6 +365,25 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
             caravanService,
             getLogger()
         );
+    }
+
+    private void registerApi() {
+        this.meltarionCaravansApi = new MeltarionCaravansApiImpl(
+            getServer(),
+            configManager,
+            caravanService,
+            caravanRouteService,
+            tradeOperationService,
+            this::isApiReady
+        );
+        getServer().getServicesManager().register(MeltarionCaravansApi.class, meltarionCaravansApi, this, ServicePriority.Normal);
+    }
+
+    private void unregisterApi() {
+        if (meltarionCaravansApi != null) {
+            getServer().getServicesManager().unregister(MeltarionCaravansApi.class, meltarionCaravansApi);
+            meltarionCaravansApi = null;
+        }
     }
 
     private void registerCommands() {
