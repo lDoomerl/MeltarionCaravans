@@ -1,3 +1,5 @@
+config-version: 1
+
 gui:
   storage:
     title: "&6Караван: &e%name%"

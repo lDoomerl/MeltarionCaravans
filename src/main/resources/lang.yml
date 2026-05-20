@@ -1,3 +1,5 @@
+config-version: 1
+
 messages:
   no-permission: "&cУ вас нет прав."
   player-only: "&cЭту команду может использовать только игрок."

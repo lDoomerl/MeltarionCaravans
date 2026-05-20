@@ -28,6 +28,7 @@ import net.meltarion.caravans.service.NotificationService;
 import net.meltarion.caravans.service.PersistentCaravanService;
 import net.meltarion.caravans.service.PublicTradeGuiService;
 import net.meltarion.caravans.service.PublicTradeService;
+import net.meltarion.caravans.service.ResourceUpdateService;
 import net.meltarion.caravans.service.RouteSetupSessionService;
 import net.meltarion.caravans.service.TownyIntegrationService;
 import net.meltarion.caravans.service.TradeOperationService;
@@ -62,12 +63,19 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
     private CaravanRouteService caravanRouteService;
     private TownyIntegrationService townyIntegrationService;
     private DynmapService dynmapService;
+    private ResourceUpdateService resourceUpdateService;
     private CaravanStorage caravanStorage;
     private CaravanService caravanService;
 
     @Override
     public void onEnable() {
-        saveDefaultConfig();
+        if (!getDataFolder().exists() && !getDataFolder().mkdirs()) {
+            getLogger().warning("Failed to create plugin data folder: " + getDataFolder());
+        }
+
+        this.resourceUpdateService = new ResourceUpdateService(this);
+        resourceUpdateService.ensureResourcesUpToDate();
+        reloadConfig();
 
         this.configManager = new ConfigManager(this);
         configManager.logLegacyWarnings();
@@ -148,6 +156,9 @@ public final class MeltarionCaravansPlugin extends JavaPlugin {
     }
 
     public void reloadPlugin() {
+        if (resourceUpdateService != null) {
+            resourceUpdateService.ensureResourcesUpToDate();
+        }
         reloadConfig();
         configManager.reload();
         configManager.logLegacyWarnings();
