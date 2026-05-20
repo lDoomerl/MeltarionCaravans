@@ -2,6 +2,10 @@
 
 `MeltarionCaravans` is a Paper plugin for persistent caravans with storage, public trading, virtual movement, Towny-aware route stops, and physical in-world projection.
 
+Current release: `v0.2.0-alpha`
+
+Wiki documentation: see the repository `wiki/` directory locally or publish it to the GitHub Wiki for a Russian admin guide.
+
 ## Requirements
 
 - Java `21`
@@ -61,10 +65,11 @@ Available methods:
 
 Not included:
 
-- PlaceholderAPI hooks
 - HTTP endpoints
 - write/control API
 - caravan inventories or item stacks
+
+PlaceholderAPI support exists separately as an optional integration layer on top of the read-only Bukkit API.
 
 ## PlaceholderAPI
 

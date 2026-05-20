@@ -1,5 +1,9 @@
 # MeltarionCaravans Wiki
 
+> Актуальная документируемая версия: **v0.2.0-alpha**
+>
+> Начиная с этой версии, в плагине есть read-only Bukkit API через `ServicesManager` и опциональная интеграция с PlaceholderAPI.
+
 ## Что такое MeltarionCaravans
 
 `MeltarionCaravans` — это плагин для Paper/Leaf 1.21.x, который добавляет караваны как постоянные игровые объекты с:

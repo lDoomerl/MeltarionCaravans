@@ -63,7 +63,7 @@ plugins/MeltarionCaravans/
 Во всех трёх ресурсных файлах есть:
 
 ```yml
-config-version: 1
+config-version: 2
 ```
 
 На старте и при `/caravan reload` плагин:

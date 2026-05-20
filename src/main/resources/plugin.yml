@@ -4,7 +4,7 @@ main: net.meltarion.caravans.MeltarionCaravansPlugin
 api-version: '1.21'
 authors:
   - Meltarion
-description: Caravan trading system plugin skeleton for Towny servers.
+description: Caravan trading and route system plugin for Towny servers.
 softdepend: [Towny, Dynmap, PlaceholderAPI]
 commands:
   caravan:

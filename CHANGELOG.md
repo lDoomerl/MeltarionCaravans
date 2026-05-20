@@ -14,6 +14,26 @@ The format is based on Keep a Changelog, and this project follows Semantic Versi
 ### Changed
 - Repository documentation expanded for installation, configuration, commands, and updates.
 
+## [0.2.0-alpha] - 2026-05-20
+
+### Added
+- Read-only Bukkit API through `ServicesManager`.
+- `CaravanSummary` DTO for safe read-only external integrations.
+- Optional PlaceholderAPI integration.
+- Indexed caravan placeholders for player dashboards and scoreboards.
+- Russian GitHub Wiki documentation.
+- User-friendly caravan identifiers for players and admins.
+
+### Changed
+- `config.yml` `config-version` bumped to `2`.
+- Improved caravan identifier resolution system.
+- `config.yml` / `lang.yml` / `gui.yml` split finalized.
+
+### Notes
+- HTTP API endpoints are not included yet.
+- DoomerAPI bridge integration is planned separately.
+- This is still alpha-stage software.
+
 ## [0.1.0] - 2026-05-20
 
 ### Added

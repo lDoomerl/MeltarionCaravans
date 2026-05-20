@@ -1,5 +1,7 @@
 # PlaceholderAPI
 
+> Страница актуальна для версии **v0.2.0-alpha**.
+
 ## Назначение
 
 Если на сервере установлен PlaceholderAPI, MeltarionCaravans регистрирует внутреннюю expansion:
